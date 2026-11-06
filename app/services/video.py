@@ -6,9 +6,15 @@ Without the key returns a simulated meeting link.
 import os, uuid, json
 import urllib.request
 
-DAILY_KEY = os.getenv('DAILY_API_KEY', '')
 DAILY_BASE = 'https://api.daily.co/v1'
-SIMULATION = not DAILY_KEY
+
+
+def _key():
+    return os.getenv('DAILY_API_KEY', '').strip()
+
+
+def _simulation():
+    return not _key()
 
 
 def create_consultation_room(appointment_ref: str) -> dict:
@@ -16,8 +22,8 @@ def create_consultation_room(appointment_ref: str) -> dict:
     Create a Daily.co video room for a consultation.
     Returns: {room_url, name, simulation}
     """
-    if SIMULATION:
-        # Return a publicly accessible Daily.co demo room
+    if _simulation():
+        # No DAILY_API_KEY set: this link will NOT open a real room.
         room_name = f'medlink-{appointment_ref.lower()}'
         return {
             'room_url': f'https://medlink-demo.daily.co/{room_name}',
@@ -29,9 +35,9 @@ def create_consultation_room(appointment_ref: str) -> dict:
     room_name = f'medlink-{appointment_ref.lower()}-{uuid.uuid4().hex[:6]}'
     payload = json.dumps({
         'name': room_name,
-        'privacy': 'private',
+        'privacy': 'public',
         'properties': {
-            'exp': int(__import__('time').time()) + 7200, # 2hr expiry
+            'exp': int(__import__('time').time()) + 86400, # 24h expiry
             'max_participants': 2,
             'enable_recording': False,
         },
@@ -40,7 +46,7 @@ def create_consultation_room(appointment_ref: str) -> dict:
         DAILY_BASE + '/rooms',
         data=payload,
         headers={'Content-Type': 'application/json',
-                 'Authorization': f'Bearer {DAILY_KEY}'},
+                 'Authorization': f'Bearer {_key()}'},
         method='POST',
     )
     try:
@@ -57,7 +63,7 @@ def create_consultation_room(appointment_ref: str) -> dict:
 
 def create_patient_token(room_name: str, patient_name: str) -> str:
     """Create a short-lived Daily.co token for the patient."""
-    if SIMULATION:
+    if _simulation():
         return ''
     payload = json.dumps({
         'properties': {
@@ -71,7 +77,7 @@ def create_patient_token(room_name: str, patient_name: str) -> str:
         DAILY_BASE + '/meeting-tokens',
         data=payload,
         headers={'Content-Type': 'application/json',
-                 'Authorization': f'Bearer {DAILY_KEY}'},
+                 'Authorization': f'Bearer {_key()}'},
         method='POST',
     )
     try:

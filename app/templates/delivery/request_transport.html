@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Request Transport — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:520px;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Request Transport</h1>
+      <p class="page-subtitle">To appointment {{ appt.reference }} at {{ appt.facility.name if appt.facility else 'your facility' }}</p>
+    </div>
+  </div>
+  <div class="card">
+    <form method="POST">
+      <div class="form-group">
+        <label>Your pickup address *</label>
+        <input name="pickup_address" required placeholder="e.g. House 4, Ntinda, Kampala">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Pickup Latitude</label>
+          <input name="pickup_lat" type="number" step="any" id="plat">
+        </div>
+        <div class="form-group">
+          <label>Pickup Longitude</label>
+          <input name="pickup_lon" type="number" step="any" id="plon">
+        </div>
+      </div>
+      <div style="background:#dbeafe;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;">
+         Destination: <strong>{{ appt.facility.name if appt.facility else 'Facility TBD' }}</strong><br>
+        {{ appt.facility.address if appt.facility else '' }}
+      </div>
+      <div style="background:#f0fdf4;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;">
+         <strong>Transport fee: UGX 8,000 (flat rate demo)</strong><br>
+        <span style="color:#6b7280;">Staff at the facility are expecting you — they have your appointment details.</span>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Request Driver</button>
+        <a href="{{ url_for('telemedicine.appointment_detail', appt_id=appt.id) }}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(p =>{
+    document.getElementById('plat').value = p.coords.latitude.toFixed(6);
+    document.getElementById('plon').value = p.coords.longitude.toFixed(6);
+  });
+}
+</script>
+{% endblock %}

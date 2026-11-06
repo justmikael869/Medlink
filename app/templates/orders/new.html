@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}New Order — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Place New Order</h1>
+  <a href="{{ url_for('orders.index') }}" class="btn btn-secondary">← Back</a>
+</div>
+
+<form method="POST">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Supplier</span></div>
+    <div class="form-group">
+      <label>Supplier type</label>
+      <select name="supplier_type" id="supplier-type" onchange="toggleSupplier()">
+        <option value="external">External / International</option>
+        <option value="local">Local Distributor (on MedLink)</option>
+      </select>
+    </div>
+    <div id="external-supplier-section">
+      <div class="form-group">
+        <label>External supplier</label>
+        <select name="external_supplier">
+          {% for s in external_suppliers %}
+          <option value="{{ s }}">{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div id="local-supplier-section" style="display:none;">
+      <div class="form-group">
+        <label>Select local distributor</label>
+        <select name="seller_facility_id">
+          <option value="">— Select —</option>
+          {% for s in suppliers %}
+          <option value="{{ s.id }}">{{ s.name }} ({{ s.country }})</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Delivery Info</span></div>
+    <div class="form-group">
+      <label>Delivery address</label>
+      <input type="text" name="delivery_address" placeholder="Clinic address">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Expected delivery</label>
+        <input type="date" name="expected_delivery">
+      </div>
+      <div class="form-group">
+        <label>Currency</label>
+        <select name="currency">
+          <option value="UGX">UGX (Ugandan Shilling)</option>
+          <option value="USD">USD (US Dollar)</option>
+          <option value="CNY">CNY (Chinese Yuan)</option>
+          <option value="INR">INR (Indian Rupee)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea name="notes" rows="2" placeholder="Any special instructions…"></textarea>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title">Medicine Items</span>
+    <span style="font-size:12px;color:#9ca3af;">Enter quantity for items you want to order</span>
+  </div>
+  {% set current_cat = namespace(c='') %}
+  {% for med in medicines %}
+    {% if med.category != current_cat.c %}
+      {% if not loop.first %}</div>{% endif %}
+      {% set current_cat.c = med.category %}
+      <div>
+      <p style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin:14px 0 8px;">{{ med.category }}</p>
+    {% endif %}
+    <div class="order-items-add">
+      <div>
+        <span style="font-size:13px;font-weight:500;">{{ med.name }}</span>
+        {% if med.critical %}<span style="color:#ef4444;font-size:11px;">Critical</span>{% endif %}
+        <div style="font-size:11px;color:#9ca3af;">{{ med.dosage_form }} {{ med.strength }} · per {{ med.unit }}</div>
+      </div>
+      <div>
+        <label style="font-size:10px;color:#6b7280;">Qty</label>
+        <input type="number" name="qty_{{ med.id }}" min="0" placeholder="0">
+      </div>
+      <div>
+        <label style="font-size:10px;color:#6b7280;">Unit price</label>
+        <input type="number" name="price_{{ med.id }}" min="0" step="0.01" placeholder="0.00">
+      </div>
+    </div>
+  {% endfor %}
+  </div>
+</div>
+
+<div class="form-actions" style="margin-top:16px;">
+  <button type="submit" class="btn btn-primary">Place Order</button>
+  <a href="{{ url_for('orders.index') }}" class="btn btn-secondary">Cancel</a>
+</div>
+</form>
+
+<script>
+function toggleSupplier() {
+  const t = document.getElementById('supplier-type').value;
+  document.getElementById('external-supplier-section').style.display = t === 'external' ? '' : 'none';
+  document.getElementById('local-supplier-section').style.display = t === 'local' ? '' : 'none';
+}
+</script>
+{% endblock %}

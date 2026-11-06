@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Book with Dr {{ doctor.name }} — MedLink{% endblock %}
+{% block public_content %}{% block content %}
+<div style="max-width:560px;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Book with Dr {{ doctor.name }}</h1>
+      <p class="page-subtitle">{{ doctor.specialisation or 'General Practice' }}</p>
+    </div>
+    <a href="{{ url_for('telemedicine.doctor_list') }}" class="btn btn-secondary">← Back</a>
+  </div>
+
+  <div class="card" style="margin-bottom:12px;background:#f0fdf4;border:1px solid #bbf7d0;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="font-size:30px;color:#16a34a;"><i class="ti ti-stethoscope"></i></div>
+      <div>
+        <div style="font-weight:600;">Dr {{ doctor.name }}</div>
+        <div style="font-size:13px;color:#6b7280;">{{ doctor.specialisation }}</div>
+        {% if doctor.languages %}<div style="font-size:12px;color:#6b7280;">{{ doctor.languages }}</div>{% endif %}
+        {% if doctor.bio %}<div style="font-size:12px;color:#374151;margin-top:4px;">{{ doctor.bio[:120] }}{% if doctor.bio|length>120 %}…{% endif %}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <form method="POST" action="{{ url_for('telemedicine.book_doctor', doctor_id=doctor.id) }}">
+      <div class="form-group">
+        <label>Consultation type</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <label style="display:flex;align-items:center;gap:8px;padding:12px;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;">
+            <input type="radio" name="appt_type" value="remote" checked>Remote (video/chat)
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;padding:12px;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;">
+            <input type="radio" name="appt_type" value="in_person">In-person
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Preferred date & time</label>
+        <select name="slot_time">
+          <option value="">— Select a slot —</option>
+          {% for slot in slots %}
+          <option value="{{ slot.strftime('%Y-%m-%dT%H:%M') }}">{{ slot.strftime('%A, %d %b %Y at %H:%M') }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Brief description of your symptoms</label>
+        <textarea name="notes" rows="3" placeholder="e.g. Fever for 3 days, headache, no appetite…"></textarea>
+      </div>
+
+      <div style="background:#fef9c3;border-radius:8px;padding:12px;margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:4px;">
+           Consultation fee: UGX {{ '{:,.0f}'.format(doctor.consultation_fee_ugx or 0) }}
+        </div>
+        <div style="font-size:12px;color:#6b7280;">
+          Held in escrow — released to the doctor only after you confirm the consultation is complete.
+        </div>
+        <div style="font-size:12px;margin-top:6px;">
+          Your wallet: <strong>UGX {{ '{:,.0f}'.format(current_user.wallet_balance_ugx or 0) }}</strong>
+          {% if (current_user.wallet_balance_ugx or 0) < (doctor.consultation_fee_ugx or 0) %}
+          <span style="color:#dc2626;">— Insufficient. <a href="{{ url_for('telemedicine.wallet') }}">Top up wallet</a></span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary"
+          {% if (current_user.wallet_balance_ugx or 0) < (doctor.consultation_fee_ugx or 0) and (doctor.consultation_fee_ugx or 0) >0 %}disabled{% endif %}>
+          Confirm Booking
+        </button>
+        <a href="{{ url_for('telemedicine.doctor_list') }}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}{% endblock %}

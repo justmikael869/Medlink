@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}Find Medicine Near You — MedLink{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+{% endblock %}
+{% block public_content %}{% block content %}
+
+<div class="search-hero">
+  <h1>Find Medicine Near You</h1>
+  <p>Search by medicine name or disease — we'll show you the nearest clinic, pharmacy or hospital that has it in stock.</p>
+
+  <div style="display:flex;gap:8px;flex-direction:column;max-width:520px;margin:0 auto;">
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="e.g. Artemether, Malaria, Paracetamol…" autofocus>
+      <button onclick="doSearch()">Search</button>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+      <div class="search-tabs">
+        <a href="#" class="search-tab active" id="tab-medicine" onclick="setType('medicine');return false;">By Medicine</a>
+        <a href="#" class="search-tab" id="tab-disease" onclick="setType('disease');return false;">By Disease</a>
+      </div>
+      <button onclick="getGPS()" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;">Use my location</button>
+    </div>
+    <div id="gps-status" style="font-size:12px;opacity:.8;text-align:center;"></div>
+  </div>
+
+  <div style="margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+    <span style="font-size:12px;opacity:.7;">Quick search:</span>
+    {% for disease in ['Malaria','HIV/AIDS','Tuberculosis','Typhoid','Diabetes','Hypertension','Malnutrition'] %}
+    <a href="#" onclick="quickSearch('{{ disease }}','disease');return false;"
+       style="font-size:12px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:3px 10px;text-decoration:none;">{{ disease }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+<div id="map" style="display:none;"></div>
+
+<div id="results-area"></div>
+
+<div style="text-align:center;padding:40px 20px;color:var(--text-muted);" id="empty-state">
+  <div style="font-size:32px;margin-bottom:12px;color:var(--primary);"><i class="ti ti-pill-filled"></i></div>
+  <p style="font-size:15px;font-weight:500;margin-bottom:6px;">Search for any medicine or disease</p>
+  <p style="font-size:13px;">Enable GPS for distance-sorted results. Works for tourists, parents, anyone needing medicine fast.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+let userLat = null, userLon = null, searchType = 'medicine', map = null, markers = [];
+
+function setType(t) {
+  searchType = t;
+  document.getElementById('tab-medicine').classList.toggle('active', t === 'medicine');
+  document.getElementById('tab-disease').classList.toggle('active', t === 'disease');
+}
+
+function getGPS() {
+  var statusEl = document.getElementById('gps-status');
+  if (!navigator.geolocation) {
+    statusEl.textContent = 'GPS not supported by this browser.';
+    return;
+  }
+  statusEl.innerHTML = '<i class="ti ti-loader" style="animation:spin 1s linear infinite;display:inline-block;"></i>Getting your precise location…';
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      userLat = pos.coords.latitude;
+      userLon = pos.coords.longitude;
+      var acc = Math.round(pos.coords.accuracy);
+      statusEl.innerHTML =
+        '<i class="ti ti-current-location" style="color:var(--success);"></i>' +
+        'Live location — ' + userLat.toFixed(5) + ', ' + userLon.toFixed(5) +
+        ' <span style="color:var(--text-muted);font-size:0.8rem;">(±' + acc + 'm accuracy)</span>';
+      // If map is open, pan to user immediately
+      if (map) map.setView([userLat, userLon], 14);
+    },
+    function(err) {
+      var msgs = {1:'Location permission denied.', 2:'GPS signal unavailable.', 3:'Location request timed out.'};
+      statusEl.innerHTML = '<i class="ti ti-map-pin-off"></i>' + (msgs[err.code] || 'Could not get location.') +
+        ' Results will not be sorted by distance.';
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
+}
+
+function quickSearch(q, type) {
+  setType(type);
+  document.getElementById('search-input').value = q;
+  doSearch();
+}
+
+function doSearch() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) return;
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('results-area').innerHTML = '<p style="text-align:center;padding:30px;color:#9ca3af;">Searching…</p>';
+
+  let url = `/api/v1/search?q=${encodeURIComponent(q)}&type=${searchType}`;
+  if (userLat) url += `&lat=${userLat}&lon=${userLon}`;
+
+  fetch(url)
+    .then(r =>r.json())
+    .then(data =>renderResults(data.results || [], q))
+    .catch(() =>{
+      document.getElementById('results-area').innerHTML = '<p style="text-align:center;color:#ef4444;padding:20px;">Search failed. Please try again.</p>';
+    });
+}
+
+function renderResults(results, query) {
+  if (!results.length) {
+    document.getElementById('map').style.display = 'none';
+    document.getElementById('results-area').innerHTML = `
+      <div style="text-align:center;padding:40px;color:var(--text-muted);">
+        <div style="font-size:30px;margin-bottom:10px;color:#9ca3af;"><i class="ti ti-search-off"></i></div>
+        <p style="font-size:15px;font-weight:500;">No results found for "<strong>${query}</strong>"</p>
+        <p style="font-size:13px;margin-top:6px;">Try a different name, or search by disease instead.</p>
+      </div>`;
+    return;
+  }
+
+  // Show map
+  document.getElementById('map').style.display = 'block';
+  if (!map) {
+    map = L.map('map').setView([userLat || 1.3733, userLon || 32.2903], userLat ? 14 : 7);
+
+    // Satellite layer (Esri World Imagery — free, no API key)
+    var satellite = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { attribution: 'Tiles © Esri · Maxar · Earthstar Geographics', maxZoom: 19 }
+    );
+    // Label overlay on satellite
+    var labels = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+      { attribution: '© Esri', maxZoom: 19, opacity: 1 }
+    );
+    // Street/road fallback
+    var streets = L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { attribution: '© OpenStreetMap contributors', maxZoom: 19 }
+    );
+
+    // Default: satellite + labels
+    satellite.addTo(map);
+    labels.addTo(map);
+
+    // Layer toggle control (top-right corner)
+    L.control.layers(
+      { 'Satellite': satellite, 'Street Map': streets },
+      { 'Labels': labels },
+      { position: 'topright', collapsed: false }
+    ).addTo(map);
+  }
+  markers.forEach(m =>m.remove());
+  markers = [];
+
+  if (userLat) {
+    const me = L.circleMarker([userLat, userLon], {radius: 8, color:'#0f4c81', fillColor:'#3b82f6', fillOpacity:.8}).addTo(map);
+    me.bindPopup(' Your location');
+    markers.push(me);
+  }
+
+  const typeIcons = {
+    pharmacy: '', government_clinic: '', private_clinic: '',
+    drug_shop: '', distributor: '', ngo_clinic: '', manufacturer: ''
+  };
+  const typeCols = {
+    pharmacy: '#22c55e', government_clinic: '#3b82f6', private_clinic: '#8b5cf6',
+    drug_shop: '#f97316', distributor: '#ec4899', manufacturer: '#6b7280'
+  };
+
+  const bounds = [];
+  results.forEach(r =>{
+    if (r.lat && r.lon) {
+      const col = typeCols[r.type] || '#0f4c81';
+      const icon = L.divIcon({
+        html: `<div style="background:${col};color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.3);">${typeIcons[r.type] || ''}</div>`,
+        iconSize: [32,32], iconAnchor: [16,16], className: ''
+      });
+      const meds = r.medicines ? r.medicines.map(m =>`${m.name} (${m.quantity} ${m.price_ugx ? '· UGX '+m.price_ugx.toLocaleString() : ''})`).join('<br>') : r.medicine;
+      const mk = L.marker([r.lat, r.lon], {icon}).addTo(map);
+      mk.bindPopup(`<strong>${r.name}</strong><br>${r.address || ''}<br><small>${r.phone || 'N/A'}</small><br><br><b>In stock:</b><br>${meds}`);
+      markers.push(mk);
+      bounds.push([r.lat, r.lon]);
+    }
+  });
+  if (bounds.length) map.fitBounds(bounds, {padding: [40,40]});
+
+  // Render list
+  const html = results.map((r, i) =>{
+    const dist = r.distance_km ? `<div class="result-dist">${r.distance_km}<small>km away</small></div>` : '';
+    const meds = r.medicines
+      ? `<div class="med-chips">${r.medicines.map(m =>`<span class="med-chip">${m.name} · ${m.quantity} left${m.price ? ' · UGX '+m.price.toLocaleString() : ''}</span>`).join('')}</div>`
+      : `<div class="med-chips"><span class="med-chip">${r.medicine} · ${r.quantity} left${r.price >0 ? ' · UGX '+r.price.toLocaleString() : ''}</span></div>`;
+    return `
+      <div class="result-card">
+        <div style="flex:1;">
+          <div class="result-name">${typeIcons[r.type] || ''} ${r.name}</div>
+          <span class="badge badge-${r.type}" style="margin-bottom:4px;">${r.type.replace(/_/g,' ')}</span>
+          <div class="result-meta">
+            <span>${r.address || 'Address not listed'}</span>
+            ${r.phone ? `<span>${r.phone}</span>` : ''}
+          </div>
+          ${meds}
+        </div>
+        ${dist}
+      </div>`;
+  }).join('');
+
+  document.getElementById('results-area').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <p style="font-size:14px;font-weight:600;">${results.length} location${results.length !== 1 ? 's' : ''} found for <em>${query}</em></p>
+      <p style="font-size:12px;color:#9ca3af;">${userLat ? 'Sorted by distance' : 'Enable GPS for distance sorting'}</p>
+    </div>
+    ${html}`;
+}
+
+// Auto-try GPS on load
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(pos =>{
+    userLat = pos.coords.latitude;
+    userLon = pos.coords.longitude;
+  }, () =>{});
+}
+
+document.getElementById('search-input').addEventListener('keydown', e =>{
+  if (e.key === 'Enter') doSearch();
+});
+</script>
+{% endblock %}{% endblock %}

@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Start Maternal Profile — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:620px;margin:0 auto;">
+  <div style="text-align:center;margin-bottom:28px;">
+    <div style="font-size:36px;margin-bottom:12px;color:#db2777;"><i class="ti ti-heart"></i></div>
+    <h1 style="font-size:22px;font-weight:700;">Maternal Health Registration</h1>
+    <p style="font-size:14px;color:var(--text-muted);max-width:400px;margin:0 auto;">
+      We'll create your personalised ANC schedule and send SMS reminders in your language. 
+      Your information is private and secure.
+    </p>
+  </div>
+
+  <div class="card">
+    <form method="POST">
+      <!-- Pregnancy dates -->
+      <div style="font-weight:600;font-size:14px;margin-bottom:12px;padding-bottom:8px;border-bottom:0.5px solid var(--border);">
+         Pregnancy dates
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Last Menstrual Period (LMP) date *</label>
+          <input type="date" name="lmp_date" required id="lmp-input" onchange="calcEDD()">
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">The first day of your last period</div>
+        </div>
+        <div class="form-group">
+          <label>Estimated Due Date (EDD)</label>
+          <input type="text" id="edd-display" readonly placeholder="Calculated automatically…" style="background:var(--surface-2);color:var(--text-muted);">
+        </div>
+      </div>
+
+      <!-- Obstetric history -->
+      <div style="font-weight:600;font-size:14px;margin:16px 0 12px;padding-bottom:8px;border-bottom:0.5px solid var(--border);">
+         Obstetric history
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Gravida (total pregnancies) *</label>
+          <select name="gravida">
+            {% for i in range(1, 11) %}
+            <option value="{{ i }}" {% if i==1 %}selected{% endif %}>{{ i }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Parity (live births)</label>
+          <select name="parity">
+            {% for i in range(0, 11) %}
+            <option value="{{ i }}" {% if i==0 %}selected{% endif %}>{{ i }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Risk factors -->
+      <div style="font-weight:600;font-size:14px;margin:16px 0 12px;padding-bottom:8px;border-bottom:0.5px solid var(--border);">
+         Risk factors <span style="font-size:11px;font-weight:400;color:var(--text-muted);">(tick all that apply — used to customise your care)</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+        <label class="checkbox-label"><input type="checkbox" name="diabetes" value="yes">Diabetes (gestational or pre-existing)</label>
+        <label class="checkbox-label"><input type="checkbox" name="hypertension" value="yes">High blood pressure / hypertension</label>
+        <label class="checkbox-label"><input type="checkbox" name="sickle_cell" value="yes">Sickle cell disease</label>
+        <label class="checkbox-label"><input type="checkbox" name="hiv_yes" value="yes" id="hiv-chk" onchange="document.getElementById('hiv-group').style.display=this.checked?'block':'none'">HIV positive (PMTCT)</label>
+      </div>
+      <div id="hiv-group" style="display:none;" class="form-group">
+        <label>HIV status</label>
+        <select name="hiv_status">
+          <option value="positive">Positive — on PMTCT / ART</option>
+          <option value="unknown">Unknown — not yet tested</option>
+        </select>
+      </div>
+
+      <!-- Preferred clinic & language -->
+      <div style="font-weight:600;font-size:14px;margin:16px 0 12px;padding-bottom:8px;border-bottom:0.5px solid var(--border);">
+         Preferred clinic & language
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Preferred ANC clinic</label>
+          <select name="facility_id">
+            <option value="">— I'll choose later —</option>
+            {% for f in facilities %}
+            <option value="{{ f.id }}">{{ f.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Preferred SMS language</label>
+          <select name="language">
+            <option value="English">English</option>
+            <option value="Luganda">Luganda</option>
+            <option value="Runyankole">Runyankole</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="background:#f0fdf4;border-radius:10px;padding:14px;font-size:13px;color:#166534;margin-bottom:20px;">
+         <strong>You'll receive SMS reminders</strong>3 days before each ANC visit in your chosen language — for free.
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
+         Create My Maternal Profile
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function calcEDD() {
+  const lmp = document.getElementById('lmp-input').value;
+  if (!lmp) return;
+  const d = new Date(lmp);
+  d.setDate(d.getDate() + 280); // 40 weeks
+  document.getElementById('edd-display').value = d.toLocaleDateString('en-UG', {day:'numeric', month:'long', year:'numeric'});
+}
+</script>
+{% endblock %}

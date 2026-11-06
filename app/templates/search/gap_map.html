@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Medicine Shortage Map — MedLink{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Medicine Shortage Map</h1>
+    <p class="page-subtitle">Live view of zero-result searches across Uganda — updated in real time</p>
+  </div>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">
+  <div id="map" style="height:480px;"></div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title">Top Reported Shortages</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Medicine / Query</th><th>Search Type</th><th>Reports</th><th>Last Searched</th><th>District Notified</th></tr></thead>
+      <tbody>
+        {% for g in gaps %}
+        <tr>
+          <td style="font-weight:500;">{{ g.search_query }}</td>
+          <td><span class="badge badge-info">{{ g.search_type or 'medicine' }}</span></td>
+          <td><strong>{{ g.count }}</strong></td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ g.last_searched.strftime('%d %b %Y') if g.last_searched else '—' }}</td>
+          <td><span class="badge badge-{{ 'success' if g.district_notified else 'muted' }}">{{ 'Yes' if g.district_notified else 'No' }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const map = L.map('map').setView([1.3733, 32.2903], 7);
+    var satellite = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { attribution: 'Tiles © Esri · Maxar', maxZoom: 19 }
+    );
+    var labels = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+      { attribution: '© Esri', maxZoom: 19 }
+    );
+    var streets = L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { attribution: '© OpenStreetMap', maxZoom: 19 }
+    );
+    satellite.addTo(map);
+    labels.addTo(map);
+    L.control.layers({'Satellite': satellite,'Street Map': streets},{'Labels': labels},{position:'topright',collapsed:false}).addTo(map);
+
+// Plot facilities with shortage indicators from real DB data
+const facilities = [
+{% for f in facilities %}
+  { name: {{ f.name|tojson }}, lat: {{ f.latitude }}, lon: {{ f.longitude }},
+    type: {{ f.facility_type|tojson }}, district: {{ (f.district.name if f.district else '')|tojson }} },
+{% endfor %}
+];
+
+const gaps = [
+{% for g in gaps %}
+  { query: {{ g.search_query|tojson }}, count: {{ g.count }},
+    lat: {{ g.user_lat or 'null' }}, lon: {{ g.user_lon or 'null' }} },
+{% endfor %}
+];
+
+// Draw facility markers
+facilities.forEach(f =>{
+  const col = f.type === 'pharmacy' ? '#1a9e5c' : f.type === 'government_clinic' ? '#0f4c81' : '#d97706';
+  const icon = L.divIcon({
+    html: `<div style="background:${col};border-radius:50%;width:10px;height:10px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div>`,
+    iconSize:[10,10], iconAnchor:[5,5], className:''
+  });
+  L.marker([f.lat, f.lon], {icon}).addTo(map)
+   .bindPopup(`<strong>${f.name}</strong><br>${f.district}`);
+});
+
+// Draw shortage hotspots — circles sized by count
+const maxCount = Math.max(...gaps.filter(g =>g.lat && g.lon).map(g =>g.count), 1);
+gaps.filter(g =>g.lat && g.lon).forEach(g =>{
+  const r = 8 + (g.count / maxCount) * 24;
+  L.circleMarker([g.lat, g.lon], {
+    radius: r, color: '#dc2626', fillColor: '#dc2626',
+    fillOpacity: 0.35, weight: 1.5
+  }).addTo(map).bindPopup(
+    `<strong style="color:#dc2626;">Shortage: ${g.query}</strong><br>${g.count} reports at this location`
+  );
+});
+
+// Legend
+const legend = L.control({position:'bottomright'});
+legend.onAdd = () =>{
+  const d = L.DomUtil.create('div');
+  d.style.cssText = 'background:#fff;padding:10px 14px;border-radius:8px;border:1px solid #e5e7eb;font-size:12px;line-height:1.8;';
+  d.innerHTML = `
+    <div style="font-weight:600;margin-bottom:6px;">Legend</div>
+    <div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#0f4c81;margin-right:6px;"></span>Government Hospital</div>
+    <div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#1a9e5c;margin-right:6px;"></span>Pharmacy</div>
+    <div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#d97706;margin-right:6px;"></span>Private Clinic</div>
+    <div><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:rgba(220,38,38,.35);border:2px solid #dc2626;margin-right:5px;"></span>Shortage hotspot</div>
+  `;
+  return d;
+};
+legend.addTo(map);
+</script>
+{% endblock %}

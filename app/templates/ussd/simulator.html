@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+{% block title %}USSD Simulator — MedLink Offline Access{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Offline Access — USSD Simulator</h1>
+    <p class="page-subtitle">Simulates what a patient without a smartphone sees when they dial <strong>*280#</strong>on any basic phone</p>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:320px 1fr;gap:2rem;align-items:start;">
+
+  <!-- Phone mockup -->
+  <div style="position:sticky;top:1rem;">
+    <div style="
+      background:#1a1a2e;
+      border-radius:40px;
+      padding:1.5rem 1rem;
+      box-shadow:0 20px 60px rgba(0,0,0,0.4), inset 0 0 0 2px #2d2d4e;
+      max-width:280px;
+      margin:0 auto;
+    ">
+      <!-- Speaker -->
+      <div style="width:60px;height:6px;background:#2d2d4e;border-radius:3px;margin:0 auto 1rem;"></div>
+      <!-- Screen -->
+      <div style="
+        background:#000;
+        border-radius:16px;
+        padding:0;
+        min-height:220px;
+        position:relative;
+        overflow:hidden;
+        border:2px solid #333;
+      ">
+        <!-- Status bar -->
+        <div style="background:#111;padding:4px 12px;display:flex;justify-content:space-between;font-size:0.65rem;color:#aaa;">
+          <span id="sim-carrier">MTN Uganda</span>
+          <span>12:30 ▐▐▐▌ </span>
+        </div>
+        <!-- USSD display -->
+        <div style="padding:1rem;min-height:180px;display:flex;flex-direction:column;">
+          <div style="
+            background:#1a1a1a;
+            border:1px solid #333;
+            border-radius:8px;
+            padding:0.75rem;
+            flex:1;
+            font-family:'Courier New',monospace;
+            font-size:0.75rem;
+            color:#e0e0e0;
+            white-space:pre-wrap;
+            line-height:1.5;
+            min-height:140px;
+          " id="ussd-screen">
+Dial *280# to start
+          </div>
+          <!-- Input row (appears for CON responses) -->
+          <div id="ussd-input-row" style="display:none;margin-top:0.5rem;">
+            <input type="text" id="ussd-input"
+                   style="
+                     width:100%;box-sizing:border-box;
+                     background:#1a1a1a;border:1px solid #444;border-radius:6px;
+                     color:#fff;font-family:monospace;font-size:0.8rem;
+                     padding:0.4rem 0.6rem;
+                   "
+                   placeholder="Enter option..." maxlength="20">
+          </div>
+        </div>
+      </div>
+
+      <!-- Keypad -->
+      <div style="margin-top:1.25rem;">
+        <!-- Dial button row -->
+        <div style="display:flex;justify-content:center;margin-bottom:0.75rem;">
+          <button onclick="dialUSSD()" style="
+            background:#1a7f37;color:#fff;border:none;border-radius:50%;
+            width:54px;height:54px;font-size:1.1rem;cursor:pointer;
+            box-shadow:0 3px 8px rgba(26,127,55,0.5);
+          "></button>
+        </div>
+        <!-- Number grid -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.4rem;margin-bottom:0.5rem;">
+          {% for num in ['1','2','3','4','5','6','7','8','9','*','0','#'] %}
+          <button onclick="pressKey('{{ num }}')" style="
+            background:#2d2d4e;color:#e0e0e0;border:none;border-radius:10px;
+            padding:0.65rem;font-size:0.95rem;cursor:pointer;font-weight:600;
+            transition:background 0.1s;
+          ">{{ num }}</button>
+          {% endfor %}
+        </div>
+        <!-- Send/Back -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;">
+          <button onclick="sendInput()" id="send-btn" style="
+            background:var(--primary);color:#fff;border:none;border-radius:10px;
+            padding:0.65rem;font-size:0.85rem;cursor:pointer;font-weight:600;display:none;
+          ">Send</button>
+          <button onclick="clearSession()" style="
+            background:#7f1d1d;color:#fff;border:none;border-radius:10px;
+            padding:0.65rem;font-size:0.85rem;cursor:pointer;font-weight:600;
+          ">End Call</button>
+        </div>
+      </div>
+
+      <!-- Phone details -->
+      <div style="text-align:center;margin-top:1rem;">
+        <p style="color:#555;font-size:0.65rem;font-family:monospace;">+256 700 000 000</p>
+      </div>
+    </div>
+
+    <!-- Network toggle -->
+    <div style="text-align:center;margin-top:1rem;">
+      <label style="font-size:0.8rem;color:var(--text-muted);margin-right:0.5rem;">Simulate network:</label>
+      <select id="network-select" onchange="document.getElementById('sim-carrier').textContent=this.value"
+              style="font-size:0.8rem;border:1px solid var(--border);border-radius:6px;padding:0.25rem 0.5rem;">
+        <option>MTN Uganda</option>
+        <option>Airtel Uganda</option>
+        <option>UTL (Telecom)</option>
+        <option>Lycamobile</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Right side: explanation -->
+  <div>
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-header">
+        <h3 class="card-title"><i class="ti ti-device-mobile-off" style="color:var(--primary);"></i>Access Without a Smartphone or Internet</h3>
+      </div>
+      <div class="card-body">
+        <p style="color:var(--text-muted);margin-bottom:1.25rem;">
+          Uganda has over <strong>23 million mobile subscribers</strong>but many rural patients use basic feature phones with no data access.
+          MedLink solves this through three offline channels that work on <em>any</em>phone with a SIM card.
+        </p>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;">
+
+          <!-- USSD -->
+          <div style="background:var(--surface);border-radius:12px;padding:1.25rem;border-left:4px solid var(--primary);">
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;">
+              <div style="width:36px;height:36px;background:var(--primary-light);border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                <i class="ti ti-hash" style="color:var(--primary);"></i>
+              </div>
+              <strong>USSD — Dial *280#</strong>
+            </div>
+            <ul style="font-size:0.82rem;color:var(--text-muted);margin:0;padding-left:1.1rem;line-height:1.9;">
+              <li>Works on any phone — even a UGX 15,000 handset</li>
+              <li>No internet or data plan required</li>
+              <li>Find nearest medicine in stock</li>
+              <li>Book a doctor appointment</li>
+              <li>Check wallet balance</li>
+              <li>Report a shortage</li>
+              <li>Get emergency numbers</li>
+            </ul>
+            <div style="margin-top:0.85rem;background:#e3f2fd;border-radius:8px;padding:0.6rem 0.75rem;font-size:0.78rem;color:#1565c0;">
+              <strong>Go live:</strong>Register at <a href="https://africastalking.com" target="_blank">africastalking.com</a>,
+              create a USSD service on code *280#, point the callback URL to
+              <code>https://yourdomain.com/ussd/session</code>
+            </div>
+          </div>
+
+          <!-- SMS -->
+          <div style="background:var(--surface);border-radius:12px;padding:1.25rem;border-left:4px solid #2e7d32;">
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;">
+              <div style="width:36px;height:36px;background:#e8f5e9;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                <i class="ti ti-message" style="color:#2e7d32;"></i>
+              </div>
+              <strong>SMS — Text 8080</strong>
+            </div>
+            <ul style="font-size:0.82rem;color:var(--text-muted);margin:0;padding-left:1.1rem;line-height:1.9;">
+              <li>Text <code>FIND Paracetamol</code>— get nearest stock</li>
+              <li>Text <code>BOOK</code>— start appointment booking</li>
+              <li>Text <code>BAL</code>— check wallet balance</li>
+              <li>Text <code>HELP</code>— get all commands</li>
+              <li>Auto-replies with results in seconds</li>
+              <li>Appointment confirmations sent by SMS</li>
+            </ul>
+            <div style="margin-top:0.85rem;background:#e8f5e9;border-radius:8px;padding:0.6rem 0.75rem;font-size:0.78rem;color:#1b5e20;">
+              <strong>Go live:</strong>Same Africa's Talking account. Buy a shortcode (8080),
+              set inbound SMS callback to <code>/ussd/sms/incoming</code>.
+              Add <code>AT_API_KEY</code>and <code>AT_USERNAME</code>to <code>.env</code>.
+            </div>
+          </div>
+
+          <!-- IVR / Voice -->
+          <div style="background:var(--surface);border-radius:12px;padding:1.25rem;border-left:4px solid #e65100;">
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;">
+              <div style="width:36px;height:36px;background:#fff3e0;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                <i class="ti ti-phone-call" style="color:#e65100;"></i>
+              </div>
+              <strong>IVR — Call 0800-MEDLINK</strong>
+            </div>
+            <ul style="font-size:0.82rem;color:var(--text-muted);margin:0;padding-left:1.1rem;line-height:1.9;">
+              <li>Toll-free voice call — works for illiterate patients</li>
+              <li>Press 1 for nearest pharmacy</li>
+              <li>Press 2 to hear doctor list</li>
+              <li>Press 3 for emergency services</li>
+              <li>Available in Luganda, Swahili, English</li>
+              <li>Voice read-back of appointment details</li>
+            </ul>
+            <div style="margin-top:0.85rem;background:#fff3e0;border-radius:8px;padding:0.6rem 0.75rem;font-size:0.78rem;color:#bf360c;">
+              <strong>Go live:</strong>Africa's Talking Voice API. Register a toll-free number,
+              build IVR flow in Python with text-to-speech, set callback to <code>/ussd/ivr</code>.
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Live coverage stats -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="ti ti-chart-bar" style="color:var(--primary);"></i>Uganda Mobile Coverage Reality</h3>
+      </div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:1.25rem;">
+          <div style="text-align:center;">
+            <p style="font-size:2rem;font-weight:800;color:var(--primary);margin:0;">23M+</p>
+            <p style="font-size:0.78rem;color:var(--text-muted);margin:0;">Mobile subscribers</p>
+          </div>
+          <div style="text-align:center;">
+            <p style="font-size:2rem;font-weight:800;color:#2e7d32;margin:0;">96%</p>
+            <p style="font-size:0.78rem;color:var(--text-muted);margin:0;">GSM coverage (voice/SMS)</p>
+          </div>
+          <div style="text-align:center;">
+            <p style="font-size:2rem;font-weight:800;color:#e65100;margin:0;">52%</p>
+            <p style="font-size:0.78rem;color:var(--text-muted);margin:0;">Have a smartphone</p>
+          </div>
+          <div style="text-align:center;">
+            <p style="font-size:2rem;font-weight:800;color:#6a1b9a;margin:0;">48%</p>
+            <p style="font-size:0.78rem;color:var(--text-muted);margin:0;">Feature phone only</p>
+          </div>
+        </div>
+        <div style="background:#fff8e1;border-radius:8px;padding:1rem;font-size:0.84rem;color:#5d4037;line-height:1.6;">
+          <strong><i class="ti ti-bulb"></i>What this means for MedLink:</strong>
+          The web/app reaches 52% of Ugandans. USSD + SMS extends reach to <strong>96%</strong>
+          — including rural health workers, elderly patients, and anyone in an area with voice coverage
+          but no data. A patient in Karamoja with a UGX 15,000 Nokia can search for the nearest
+          malaria medicine stock just as easily as a doctor in Kampala on a smartphone.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var sessionId = 'SIM-' + Math.random().toString(36).substr(2,8).toUpperCase();
+var dialHistory = []; // e.g. ['1','2','3']
+var sessionOpen = false;
+
+function dialUSSD() {
+  dialHistory = [];
+  sessionOpen = true;
+  document.getElementById('ussd-input-row').style.display = 'block';
+  document.getElementById('send-btn').style.display = 'block';
+  sendToServer('');
+}
+
+function pressKey(k) {
+  var inp = document.getElementById('ussd-input');
+  inp.value += k;
+}
+
+function sendInput() {
+  var val = document.getElementById('ussd-input').value.trim();
+  if (!val) return;
+  dialHistory.push(val);
+  document.getElementById('ussd-input').value = '';
+  sendToServer(dialHistory.join('*'));
+}
+
+function clearSession() {
+  sessionOpen = false;
+  dialHistory = [];
+  sessionId = 'SIM-' + Math.random().toString(36).substr(2,8).toUpperCase();
+  document.getElementById('ussd-screen').textContent = 'Call ended.\nDial *280# to start again.';
+  document.getElementById('ussd-input-row').style.display = 'none';
+  document.getElementById('send-btn').style.display = 'none';
+  document.getElementById('ussd-input').value = '';
+}
+
+function sendToServer(text) {
+  document.getElementById('ussd-screen').textContent = 'Connecting…';
+  fetch('/ussd/simulator/send', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      sessionId: sessionId,
+      phone: '+256700000000',
+      text: text,
+    })
+  })
+  .then(r =>r.json())
+  .then(data =>{
+    var resp = data.response || '';
+    var isCON = resp.startsWith('CON ') || resp.startsWith('CON\n');
+    var isEND = resp.startsWith('END ') || resp.startsWith('END\n');
+    var display = resp.replace(/^(CON|END)\s?/, '');
+    document.getElementById('ussd-screen').textContent = display;
+    if (isEND) {
+      document.getElementById('ussd-input-row').style.display = 'none';
+      document.getElementById('send-btn').style.display = 'none';
+      sessionOpen = false;
+    }
+  })
+  .catch(function() {
+    document.getElementById('ussd-screen').textContent = 'Network error.\nCheck server is running.';
+  });
+}
+
+// Allow Enter key to send
+document.getElementById('ussd-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') sendInput();
+});
+</script>
+{% endblock %}

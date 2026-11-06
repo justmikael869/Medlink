@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Notifications — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Notifications</h1>
+    <p class="page-subtitle">Alerts, restock suggestions, and supply chain updates</p>
+  </div>
+  {% if current_user.role in ('system_admin','district_officer') %}
+  <form method="POST" action="{{ url_for('notifications.run_expiry_check') }}">
+    <button type="submit" class="btn btn-secondary">Run Expiry Check</button>
+  </form>
+  {% endif %}
+</div>
+
+{% if suggestions %}
+<div class="card" style="margin-bottom:16px;border-color:#bae6fd;">
+  <div class="card-header">
+    <span class="card-title">Restock Suggestions</span>
+    <span style="font-size:12px;color:#6b7280;">Auto-generated when your stock ran out</span>
+  </div>
+  {% for s in suggestions %}
+  <div class="suggestion-card">
+    <h4>{{ s.medicine.name }} — {{ s.facility.name }}</h4>
+    <p>
+      {{ s.reason }}.<br>
+      Suggested order: <strong>{{ s.suggested_qty }} {{ s.medicine.unit }}</strong>
+      {% if s.supplier %}
+        from <strong>{{ s.supplier.name }}</strong>
+        {% if s.supplier.country != 'Uganda' %}({{ s.supplier.country }}){% endif %}
+      {% else %}
+        (no supplier identified — please place manually)
+      {% endif %}
+    </p>
+    <div style="display:flex;gap:8px;">
+      <form method="POST" action="{{ url_for('notifications.accept_suggestion', sid=s.id) }}">
+        <button type="submit" class="btn btn-primary btn-sm">Accept & Place Order</button>
+      </form>
+      <form method="POST" action="{{ url_for('notifications.dismiss_suggestion', sid=s.id) }}">
+        <button type="submit" class="btn btn-secondary btn-sm">Dismiss</button>
+      </form>
+    </div>
+    <div class="notif-time">{{ s.created_at.strftime('%d %b %Y %H:%M') }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header"><span class="card-title">Recent Notifications</span></div>
+  {% if notifications %}
+    {% for n in notifications %}
+    <div class="notif-card {% if not n.is_read %}unread{% endif %}">
+      <div class="notif-icon">
+        {% if n.notif_type == 'stockout' %}
+        {% elif n.notif_type == 'low_stock' %}
+        {% elif n.notif_type == 'expiry' %}
+        {% elif n.notif_type == 'restock_suggestion' %}
+        {% elif n.notif_type == 'distributor_alert' %}
+        {% elif n.notif_type == 'order_update' %}
+        {% elif n.notif_type == 'search_gap' %}
+        {% else %}{% endif %}
+      </div>
+      <div style="flex:1;">
+        <div class="notif-title">{{ n.title }}</div>
+        <div class="notif-body">{{ n.body }}</div>
+        <div class="notif-time">{{ n.created_at.strftime('%d %b %Y %H:%M') }}
+          · {{ n.notif_type.replace('_',' ').title() }}
+          {% if n.related_facility %}· re: {{ n.related_facility.name }}{% endif %}
+        </div>
+        <div style="margin-top:8px;display:flex;gap:6px;">
+          {% if n.related_order_id %}
+          <a href="{{ url_for('orders.detail', order_id=n.related_order_id) }}" class="btn btn-secondary btn-sm">View Order</a>
+          {% endif %}
+          {% if n.related_alert_id %}
+          <a href="{{ url_for('alerts.index') }}" class="btn btn-secondary btn-sm">View Alert</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+  <p style="text-align:center;color:#9ca3af;padding:32px;">You're all caught up — no new notifications.</p>
+  {% endif %}
+</div>
+{% endblock %}

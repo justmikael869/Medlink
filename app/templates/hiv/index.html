@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}HIV Care Reminders — MedLink{% endblock %}
+{% block public_content %}{% block content %}
+<div style="max-width:640px;margin:0 auto;">
+
+  <div style="background:linear-gradient(135deg,#1e3a5f 0%,#1d9e75 100%);border-radius:16px;padding:32px;color:#fff;margin-bottom:24px;text-align:center;">
+    <div style="font-size:32px;margin-bottom:10px;"><i class="ti ti-shield-heart"></i></div>
+    <h1 style="font-size:22px;font-weight:700;margin-bottom:8px;">HIV Care Reminders</h1>
+    <p style="font-size:13px;opacity:.85;max-width:440px;margin:0 auto 16px;">
+      Private ART refill reminders and treatment tracking. 
+      No name required. Your information is yours alone.
+    </p>
+    <div style="display:inline-flex;gap:8px;background:rgba(255,255,255,.1);border-radius:999px;padding:6px 16px;font-size:12px;">
+      Completely private · Anonymous option · Free
+    </div>
+  </div>
+
+  {% if profile %}
+  <div class="card" style="margin-bottom:16px;border-left:4px solid #1d9e75;">
+    <div style="font-size:14px;font-weight:600;margin-bottom:8px;">You already have a care profile set up.</div>
+    <a href="{{ url_for('hiv.dashboard', profile_id=profile.id) }}" class="btn btn-primary">View my dashboard →</a>
+  </div>
+  {% else %}
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:24px;">
+    <a href="{{ url_for('hiv.register') }}" style="text-decoration:none;">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;height:100%;box-sizing:border-box;transition:box-shadow .2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow=''">
+        <div style="font-size:24px;margin-bottom:10px;color:var(--primary);"><i class="ti ti-bell-ringing"></i></div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:6px;">Set up ART reminders</div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Get SMS reminders 3 days before each refill. Never miss your medicines again.</div>
+        <div style="margin-top:12px;font-size:12px;color:var(--primary);font-weight:500;">Start →</div>
+      </div>
+    </a>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;">
+      <div style="font-size:24px;margin-bottom:10px;color:var(--primary);"><i class="ti ti-chart-line"></i></div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px;">Track viral load & CD4</div>
+      <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Log your lab results to monitor your treatment progress over time.</div>
+      <div style="margin-top:12px;font-size:12px;color:var(--text-muted);">Available after registration</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header"><span class="card-title">Why staying on ART matters</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;font-size:13px;">
+      <div style="padding:10px;background:var(--surface-2);border-radius:8px;"><div style="font-size:18px;margin-bottom:4px;color:#16a34a;"><i class="ti ti-shield-check"></i></div><div style="font-weight:600;margin-bottom:3px;">Undetectable = Untransmittable</div><div style="color:var(--text-muted);">When viral load is suppressed, HIV cannot be passed to others — including your baby</div></div>
+      <div style="padding:10px;background:var(--surface-2);border-radius:8px;"><div style="font-size:18px;margin-bottom:4px;color:#d97706;"><i class="ti ti-clock-alert"></i></div><div style="font-weight:600;margin-bottom:3px;">Timing matters</div><div style="color:var(--text-muted);">Missing doses even briefly can allow the virus to multiply and develop resistance to medicines</div></div>
+      <div style="padding:10px;background:var(--surface-2);border-radius:8px;"><div style="font-size:18px;margin-bottom:4px;color:#16a34a;"><i class="ti ti-coin-off"></i></div><div style="font-weight:600;margin-bottom:3px;">ART is free in Uganda</div><div style="color:var(--text-muted);">All ART medicines are provided free at government ART clinics and TASO centres</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">HIV support in Uganda</span></div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:10px;background:var(--surface-2);border-radius:8px;">
+        <div><strong>TASO Uganda</strong>— The AIDS Support Organisation<br><span style="color:var(--text-muted);">Counselling, ART, support groups across Uganda</span></div>
+        <a href="tel:0800200090" class="btn btn-sm btn-secondary">0800 200 090</a>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:10px;background:var(--surface-2);border-radius:8px;">
+        <div><strong>UAC — Uganda AIDS Commission</strong><br><span style="color:var(--text-muted);">National HIV hotline and referral</span></div>
+        <a href="tel:0800100066" class="btn btn-sm btn-secondary">0800 100 066</a>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:10px;background:var(--surface-2);border-radius:8px;">
+        <div><strong>Find an ART clinic</strong><br><span style="color:var(--text-muted);">Book with a doctor specialising in HIV/AIDS on MedLink</span></div>
+        <a href="{{ url_for('telemedicine.doctor_list', spec='HIV/AIDS & Infectious Disease') }}" class="btn btn-sm btn-primary">Find doctor →</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}{% endblock %}

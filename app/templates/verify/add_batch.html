@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Register Batch — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:600px;">
+  <div class="page-header">
+    <div><h1 class="page-title">Register Medicine Batch</h1>
+    <p class="page-subtitle">Add a verified batch to the NDA registry</p></div>
+  </div>
+  <div class="card">
+    <form method="POST">
+      <div class="form-group">
+        <label>Batch number * <span style="font-size:11px;color:var(--text-muted);">Printed on packaging</span></label>
+        <input type="text" name="batch_number" required placeholder="e.g. UG-2024-PFZ-001" style="font-family:monospace;letter-spacing:.05em;" autocapitalize="characters">
+      </div>
+      <div class="form-group">
+        <label>Medicine *</label>
+        <select name="medicine_id" required>
+          <option value="">— select medicine —</option>
+          {% for m in medicines %}
+          <option value="{{ m.id }}">{{ m.name }}{% if m.generic_name %} ({{ m.generic_name }}){% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Manufacturer</label>
+          <input type="text" name="manufacturer" placeholder="e.g. Cipla Ltd, India">
+        </div>
+        <div class="form-group">
+          <label>Country of origin</label>
+          <input type="text" name="country" placeholder="e.g. India, Uganda, China">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Manufacture date</label>
+          <input type="date" name="manufacture_date">
+        </div>
+        <div class="form-group">
+          <label>Expiry date *</label>
+          <input type="date" name="expiry_date" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>NDA Approval number</label>
+        <input type="text" name="nda_approval" placeholder="e.g. NDA/2024/XXXXX">
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary"><i class="ti ti-shield-check"></i>Register Batch</button>
+        <a href="{{ url_for('verify.batch_list') }}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

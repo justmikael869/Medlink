@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Request Transport — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:720px;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Request Transport</h1>
+      <p class="page-subtitle">Choose a specific delivery company or broadcast to all — first to confirm gets the job.</p>
+    </div>
+    <a href="{{ url_for('supplier.distributor_dashboard') }}" class="btn btn-secondary">Back</a>
+  </div>
+
+  {% if not delivery_cos %}
+  <div class="card" style="border-left:3px solid var(--warning);padding:1.25rem;">
+    <p style="margin:0;color:var(--text-muted);">
+      <i class="ti ti-alert-triangle"></i>
+      No verified delivery companies are currently available on MedLink.
+    </p>
+  </div>
+  {% else %}
+
+  <form method="POST">
+    <!-- Step 1: Select Order -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-header">
+        <h3 class="card-title"><i class="ti ti-package" style="color:var(--primary);"></i>Step 1 — Select Order to Ship</h3>
+      </div>
+      <div class="card-body">
+        {% if not pending_dispatch %}
+        <div style="color:var(--text-muted);font-size:0.9rem;">
+          <i class="ti ti-info-circle"></i>
+          No confirmed orders are waiting for dispatch. Confirm an order first from <a href="{{ url_for('supplier.orders') }}">Incoming Orders</a>.
+        </div>
+        {% else %}
+        <div class="form-group">
+          <label class="form-label">Confirmed Order <span style="color:var(--danger);">*</span></label>
+          <select name="order_id" id="order_select" class="form-control" required onchange="fillDelivery(this)">
+            <option value="">Select an order...</option>
+            {% for order in pending_dispatch %}
+            <option value="{{ order.id }}"
+              data-buyer="{{ order.buyer.name if order.buyer else '' }}"
+              data-address="{{ order.delivery_address or '' }}"
+              data-amount="{{ order.total_amount or 0 }}"
+              data-ref="{{ order.order_number }}">
+              {{ order.order_number }} — {{ order.buyer.name if order.buyer else 'Unknown buyer' }}
+              (UGX {{ '{:,.0f}'.format(order.total_amount or 0) }})
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div id="order_summary" style="display:none;background:var(--surface);border-radius:8px;padding:1rem;border:1px solid var(--border);">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;font-size:0.875rem;">
+            <div><p style="color:var(--text-muted);margin:0 0 0.2rem;font-size:0.75rem;">ORDER REF</p><strong id="sum_ref">—</strong></div>
+            <div><p style="color:var(--text-muted);margin:0 0 0.2rem;font-size:0.75rem;">BUYER</p><strong id="sum_buyer">—</strong></div>
+            <div><p style="color:var(--text-muted);margin:0 0 0.2rem;font-size:0.75rem;">ORDER VALUE</p><strong id="sum_amount">—</strong></div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Step 2: Delivery Details -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-header">
+        <h3 class="card-title"><i class="ti ti-map-pin" style="color:var(--primary);"></i>Step 2 — Delivery Details</h3>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Pickup Address (your location)</label>
+          <input type="text" name="pickup_address" class="form-control"
+                 value="{{ facility.address or '' }}" placeholder="Your warehouse / facility address">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Delivery Address <span style="color:var(--danger);">*</span></label>
+          <input type="text" name="delivery_address" id="delivery_addr" class="form-control"
+                 placeholder="Where should the order be delivered?" required>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-weight:500;">
+            <input type="checkbox" name="cold_chain">
+            <span>This shipment requires cold chain handling</span>
+          </label>
+          <p class="form-hint">Check if the order contains vaccines, insulin, or temperature-sensitive medicines.</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Special Instructions <span style="color:var(--text-muted);font-size:0.8rem;">(optional)</span></label>
+          <textarea name="notes" class="form-control" rows="2"
+                    placeholder="Fragile items, time window, contact person at delivery point..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Choose Company or Broadcast -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-header">
+        <h3 class="card-title"><i class="ti ti-truck-delivery" style="color:var(--primary);"></i>Step 3 — Select Delivery Company</h3>
+      </div>
+      <div class="card-body">
+
+        <!-- Mode toggle -->
+        <div style="display:flex;gap:1rem;margin-bottom:1.5rem;">
+          <label style="flex:1;cursor:pointer;">
+            <input type="radio" name="assign_mode" value="specific" checked
+                   onchange="document.getElementById('company_picker').style.display='block';document.getElementById('broadcast_msg').style.display='none';">
+            <div style="border:2px solid var(--border);border-radius:8px;padding:1rem;transition:border-color 0.2s;" id="specific_card">
+              <strong><i class="ti ti-building"></i>Choose a Specific Company</strong>
+              <p style="font-size:0.8rem;color:var(--text-muted);margin:0.25rem 0 0;">You select which company handles your delivery.</p>
+            </div>
+          </label>
+          <label style="flex:1;cursor:pointer;">
+            <input type="radio" name="assign_mode" value="open"
+                   onchange="document.getElementById('company_picker').style.display='none';document.getElementById('broadcast_msg').style.display='block';">
+            <div style="border:2px solid var(--border);border-radius:8px;padding:1rem;transition:border-color 0.2s;" id="open_card">
+              <strong><i class="ti ti-broadcast"></i>Open Tender (Broadcast)</strong>
+              <p style="font-size:0.8rem;color:var(--text-muted);margin:0.25rem 0 0;">Notify all companies — first to confirm gets the job.</p>
+            </div>
+          </label>
+        </div>
+
+        <!-- Specific company picker -->
+        <div id="company_picker">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+            {% for co in delivery_cos %}
+            <label style="cursor:pointer;">
+              <input type="radio" name="company_id" value="{{ co.id }}" style="display:none;" class="company_radio">
+              <div class="company-card" style="border:2px solid var(--border);border-radius:8px;padding:1rem;transition:border-color 0.2s;">
+                <strong style="font-size:0.95rem;">{{ co.name }}</strong>
+                <div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted);">
+                  <div><i class="ti ti-users"></i>{{ co.drivers|length }} driver(s)</div>
+                  {% if co.contact_phone %}<div><i class="ti ti-phone"></i>{{ co.contact_phone }}</div>{% endif %}
+                  {% if co.coverage_districts %}
+                  <div style="margin-top:0.3rem;"><i class="ti ti-map"></i>
+                    {% set districts_list = co.coverage_districts.split(',') %}
+                    {{ districts_list[:2]|join(', ') }}{% if districts_list|length >2 %} +{{ districts_list|length - 2 }} more{% endif %}
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Broadcast message -->
+        <div id="broadcast_msg" style="display:none;background:#e3f2fd;border-radius:8px;padding:1rem;border-left:3px solid #1565c0;">
+          <strong style="color:#1565c0;"><i class="ti ti-broadcast"></i>Open Tender Selected</strong>
+          <p style="font-size:0.85rem;color:#1565c0;margin:0.5rem 0 0;">
+            Your request will be sent to all {{ delivery_cos|length }} verified delivery companies.
+            The first company to confirm the delivery gets the job. You will be notified immediately.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="width:100%;">
+      <i class="ti ti-send"></i>Send Transport Request
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+<script>
+// Fill delivery address from order selection
+function fillDelivery(sel) {
+  var opt = sel.options[sel.selectedIndex];
+  if (!opt.value) { document.getElementById('order_summary').style.display='none'; return; }
+  document.getElementById('delivery_addr').value = opt.dataset.address || '';
+  document.getElementById('sum_ref').textContent = opt.dataset.ref || '—';
+  document.getElementById('sum_buyer').textContent = opt.dataset.buyer || '—';
+  document.getElementById('sum_amount').textContent= 'UGX ' + Number(opt.dataset.amount).toLocaleString();
+  document.getElementById('order_summary').style.display = 'block';
+}
+
+// Highlight selected company card
+document.querySelectorAll('.company_radio').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    document.querySelectorAll('.company-card').forEach(function(c) {
+      c.style.borderColor = 'var(--border)';
+    });
+    this.closest('label').querySelector('.company-card').style.borderColor = 'var(--primary)';
+  });
+});
+</script>
+{% endblock %}

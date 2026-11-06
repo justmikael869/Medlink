@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Sent Messages — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Sent Messages</h1>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <a href="{{ url_for('messaging.inbox') }}" class="btn btn-secondary">Inbox</a>
+    <a href="{{ url_for('messaging.compose') }}" class="btn btn-primary"><i class="ti ti-pencil"></i>Compose</a>
+  </div>
+</div>
+{% if messages %}
+<div class="card" style="padding:0;">
+  {% for m in messages %}
+  <a href="{{ url_for('messaging.view', msg_id=m.id) }}"
+     style="display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid #f3f4f6;text-decoration:none;color:inherit;">
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:13px;font-weight:500;">To: {{ m.recipient.name }}</span>
+        <span style="font-size:11px;color:var(--text-muted);">{{ m.created_at.strftime('%d %b %Y') }}</span>
+      </div>
+      <div style="font-size:13px;color:var(--text);">{{ m.subject }}</div>
+      <div style="font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ m.body[:80] }}</div>
+    </div>
+    <span class="badge badge-{{ 'success' if m.is_read else 'muted' }}">{{ 'Read' if m.is_read else 'Unread' }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state card"><i class="ti ti-send"></i><p>No sent messages.</p></div>
+{% endif %}
+{% endblock %}

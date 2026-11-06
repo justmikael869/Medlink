@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Stock Levels — MedLink{% endblock %}
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Stock Levels</h1>
+    <p class="page-subtitle">Real-time inventory for your facility</p>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <a href="{{ url_for('inventory.dispensing_counter') }}" class="btn btn-secondary"><i class="ti ti-receipt"></i>Dispense</a>
+    <a href="{{ url_for('inventory.update') }}" class="btn btn-primary"><i class="ti ti-edit"></i>Update Stock</a>
+  </div>
+</div>
+
+<!-- Summary charts -->
+<div style="display:grid;grid-template-columns:1fr 2fr 2fr;gap:1rem;margin-bottom:1.5rem;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Stock Health</span></div>
+    <div class="card-body" style="display:flex;align-items:center;justify-content:center;padding:1rem;">
+      <canvas id="healthDonut" height="160" style="max-width:180px;"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Top 8 by Quantity</span></div>
+    <div class="card-body" style="padding:1rem;">
+      <canvas id="top8Chart" height="130"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Items by Category</span></div>
+    <div class="card-body" style="display:flex;align-items:center;justify-content:center;padding:1rem;">
+      <canvas id="catChart" height="160" style="max-width:200px;"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:14px;">
+  <form method="GET" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+    {% if facilities %}
+    <div class="form-group" style="margin:0;min-width:200px;">
+      <label>Facility</label>
+      <select name="facility_id" onchange="this.form.submit()">
+        <option value="">All facilities</option>
+        {% for f in facilities %}
+        <option value="{{ f.id }}" {% if selected_fid==f.id %}selected{% endif %}>{{ f.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+    <div class="form-group" style="margin:0;min-width:160px;">
+      <label>Category</label>
+      <select name="category" onchange="this.form.submit()">
+        <option value="">All categories</option>
+        {% for cat in categories %}
+        <option value="{{ cat }}" {% if cat_filter==cat %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group" style="margin:0;min-width:130px;">
+      <label>Status</label>
+      <select name="status" onchange="this.form.submit()">
+        <option value="">All</option>
+        <option value="out" {% if status_filter=='out' %}selected{% endif %}>Out of stock</option>
+        <option value="low" {% if status_filter=='low' %}selected{% endif %}>Low stock</option>
+      </select>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  {% if items %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Medicine</th><th>Category</th><th>Qty</th><th>Min.</th><th>Status</th><th>Price (UGX)</th><th>Expiry</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>
+            <strong>{{ item.medicine.name }}</strong>
+            {% if item.medicine.critical %}<span style="color:#ef4444;"></span>{% endif %}<br>
+            <small style="color:#9ca3af;">{{ item.medicine.dosage_form }} {{ item.medicine.strength }}</small>
+          </td>
+          <td>{{ item.medicine.category }}</td>
+          <td><strong>{{ item.quantity }}</strong><small style="color:#9ca3af;">{{ item.medicine.unit }}</small></td>
+          <td>{{ item.minimum_threshold }}</td>
+          <td><span class="badge badge-{{ item.status }}">{{ item.status_label }}</span></td>
+          <td>{{ '{:,.0f}'.format(item.unit_price) if item.unit_price else '—' }}</td>
+          <td style="{% if item.expiry_date and item.expiry_date.year < 2026 %}color:#ef4444;{% endif %}">
+            {{ item.expiry_date.strftime('%b %Y') if item.expiry_date else '—' }}
+          </td>
+          <td>
+            <form method="POST" action="{{ url_for('inventory.dispense') }}" style="display:flex;gap:5px;align-items:center;">
+              <input type="hidden" name="stock_id" value="{{ item.id }}">
+              <input type="number" name="quantity" value="1" min="1" max="{{ item.quantity }}" style="width:52px;padding:4px 6px;">
+              <button type="submit" class="btn btn-secondary btn-sm">Dispense</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="text-align:center;color:#9ca3af;padding:32px;">No stock data. <a href="{{ url_for('inventory.update') }}">Add inventory →</a></p>
+  {% endif %}
+</div>
+
+<script>
+Chart.defaults.font.family = 'Inter, sans-serif';
+var sCount = {{ stock_counts|safe }};
+var t8N = {{ top8_names|safe }};
+var t8Q = {{ top8_qtys|safe }};
+var catC = {{ cat_counts|safe }};
+
+new Chart(document.getElementById('healthDonut'),{
+  type:'doughnut',
+  data:{labels:['Healthy','Low','Out of Stock'],datasets:[{data:sCount,backgroundColor:['#16a34a','#f59e0b','#ef4444']}]},
+  options:{plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}}},cutout:'60%'}
+});
+new Chart(document.getElementById('top8Chart'),{
+  type:'bar',
+  data:{labels:t8N,datasets:[{label:'Units',data:t8Q,backgroundColor:'rgba(59,130,246,0.75)',borderRadius:4}]},
+  options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}
+});
+var catLabels=Object.keys(catC);
+var catPalette=['#3b82f6','#16a34a','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899'];
+new Chart(document.getElementById('catChart'),{
+  type:'doughnut',
+  data:{labels:catLabels,datasets:[{data:Object.values(catC),backgroundColor:catPalette.slice(0,catLabels.length)}]},
+  options:{plugins:{legend:{position:'right',labels:{boxWidth:12,font:{size:11}}}},cutout:'55%'}
+});
+</script>
+{% endblock %}

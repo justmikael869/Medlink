@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Payment Audit Log — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Payment Audit Log</h1>
+  <a href="{{ url_for('payments.index') }}" class="btn btn-secondary">← Payments</a>
+</div>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Payment</th><th>Event</th><th>Status Change</th><th>Actor</th><th>Note</th><th>When</th></tr></thead>
+      <tbody>
+        {% for a in audits %}
+        <tr>
+          <td><a href="{{ url_for('payments.detail', pay_id=a.payment_id) }}" style="color:var(--primary);">{{ a.payment.reference }}</a></td>
+          <td><strong>{{ a.event }}</strong></td>
+          <td style="font-size:12px;">{{ a.old_status or '—' }} → {{ a.new_status or '—' }}</td>
+          <td style="font-size:12px;">{{ a.actor.name if a.actor else 'System' }}</td>
+          <td style="font-size:12px;color:#6b7280;">{{ a.note or '—' }}</td>
+          <td style="font-size:12px;color:#9ca3af;">{{ a.created_at.strftime('%d %b %Y %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

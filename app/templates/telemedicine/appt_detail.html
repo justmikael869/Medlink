@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}Appointment {{ appt.reference }} — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Appointment {{ appt.reference }}</h1>
+    <p class="page-subtitle">
+      <span class="badge badge-{{ appt.status }}">{{ appt.status.replace('_',' ').title() }}</span>
+      &nbsp;
+      <span class="badge badge-{{ appt.appt_type }}">{{ appt.appt_type.replace('_',' ').title() }}</span>
+    </p>
+  </div>
+  <a href="{{ url_for('telemedicine.my_appointments') }}" class="btn btn-secondary">Back</a>
+</div>
+
+{% if appt.appt_type == 'remote' %}
+<div class="card" style="margin-bottom:16px;border-left:4px solid var(--primary);">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+    <div>
+      <div class="card-title" style="margin-bottom:2px;"><i class="ti ti-video" style="margin-right:6px;color:var(--primary);"></i>Video Consultation Room</div>
+      <p style="font-size:12px;color:var(--text-muted);margin:0;">Secure video call for both patient and doctor</p>
+    </div>
+    {% if appt.status == 'confirmed' and appt.video_room_url %}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="toggleVideoRoom()" class="btn btn-primary btn-sm" id="join-btn">
+        <i class="ti ti-video"></i>Join Call
+      </button>
+      <a href="{{ appt.video_room_url }}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">
+        <i class="ti ti-external-link"></i>Open in new tab
+      </a>
+    </div>
+    {% elif appt.status == 'confirmed' %}
+    <span style="font-size:12px;color:var(--text-muted);"><i class="ti ti-clock"></i>Room being prepared…</span>
+    {% else %}
+    <span style="font-size:12px;color:var(--text-muted);">Available once appointment is confirmed</span>
+    {% endif %}
+  </div>
+
+  {% if appt.status == 'confirmed' and appt.video_room_url %}
+  <div id="video-room" style="display:none;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:#000;">
+    <div style="background:#1a1a2e;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:12px;color:#94a3b8;"><i class="ti ti-shield-check" style="color:#22c55e;margin-right:4px;"></i>Secure · End-to-end encrypted</span>
+      <button onclick="toggleVideoRoom()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:12px;"><i class="ti ti-x"></i>Close</button>
+    </div>
+    <iframe
+      src="{{ appt.video_room_url }}"
+      allow="camera; microphone; fullscreen; display-capture; autoplay"
+      style="width:100%;height:520px;border:none;display:block;"
+      title="Video consultation room">
+    </iframe>
+  </div>
+  <div style="font-size:11px;color:var(--text-muted);margin-top:8px;display:flex;align-items:center;gap:6px;">
+    <i class="ti ti-link"></i>
+    <span style="font-family:monospace;">{{ appt.video_room_url }}</span>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if current_user.role == 'doctor' and (appt.patient.blood_type or appt.patient.known_allergies or appt.patient.chronic_conditions) %}
+<div class="card" style="margin-bottom:16px;border-left:4px solid #ef4444;">
+  <div class="card-header">
+    <span class="card-title"><i class="ti ti-heart-rate-monitor" style="margin-right:6px;color:#ef4444;"></i>Patient health record</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;font-size:13px;">
+    {% if appt.patient.blood_type %}
+    <div><div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Blood type</div><strong>{{ appt.patient.blood_type }}</strong></div>
+    {% endif %}
+    {% if appt.patient.known_allergies %}
+    <div><div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Allergies</div><span style="color:#991b1b;">{{ appt.patient.known_allergies }}</span></div>
+    {% endif %}
+    {% if appt.patient.chronic_conditions %}
+    <div><div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Chronic conditions</div>{{ appt.patient.chronic_conditions }}</div>
+    {% endif %}
+    {% if appt.patient.insurance_provider %}
+    <div><div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Insurance</div>{{ appt.patient.insurance_provider }} · {{ appt.patient.insurance_number or '—' }}</div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="grid-2" style="margin-bottom:16px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Appointment Details</span></div>
+    <table style="font-size:13px;">
+      <tr><td style="color:var(--text-muted);padding:6px 0;width:130px;">Patient</td><td><strong>{{ appt.patient.name }}</strong></td></tr>
+      <tr><td style="color:var(--text-muted);padding:6px 0;">Phone</td><td>{{ appt.patient.phone or '—' }}</td></tr>
+      <tr><td style="color:var(--text-muted);padding:6px 0;">Doctor</td><td>{{ ('Dr ' + appt.doctor.name) if appt.doctor else '—' }}</td></tr>
+      <tr><td style="color:var(--text-muted);padding:6px 0;">Facility</td><td>{{ appt.facility.name if appt.facility else '—' }}</td></tr>
+      <tr><td style="color:var(--text-muted);padding:6px 0;">Slot</td><td>{{ appt.slot_time.strftime('%d %b %Y at %H:%M') if appt.slot_time else 'TBD' }}</td></tr>
+      <tr><td style="color:var(--text-muted);padding:6px 0;">Booked</td><td>{{ appt.created_at.strftime('%d %b %Y') }}</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">QR Check-in Code</span></div>
+    <div style="text-align:center;padding:16px 0;">
+      <div style="font-size:32px;font-weight:700;letter-spacing:6px;color:var(--primary);font-family:monospace;">
+        {{ appt.qr_code }}
+      </div>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:10px;">
+        Show this code to facility staff on arrival. They will have your full record ready.
+      </p>
+    </div>
+    {% if appt.payment %}
+    <div class="divider"></div>
+    <div style="font-size:13px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="color:var(--text-muted);">Consultation fee</span>
+        <strong>UGX {{ '{:,.0f}'.format(appt.payment.amount_ugx) }}</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="color:var(--text-muted);">Platform fee (10%)</span>
+        <span>UGX {{ '{:,.0f}'.format(appt.payment.platform_fee_ugx) }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span style="color:var(--text-muted);">Payment status</span>
+        <span class="badge badge-{{ appt.payment.status }}">{{ appt.payment.status.title() }}</span>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if appt.consultation %}
+{% set c = appt.consultation %}
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header">
+    <span class="card-title">Consultation Record</span>
+    <div style="display:flex;gap:6px;margin-left:auto;">
+    {% if appt.consultation and appt.consultation.prescriptions %}
+    <a href="{{ url_for('telemedicine.prescription_pdf', appt_id=appt.id) }}" class="btn btn-secondary btn-sm">
+      <i class="ti ti-file-type-pdf"></i>Prescription PDF
+    </a>
+    {% endif %}
+    {% if appt.consultation and appt.consultation.referral_needed %}
+    <a href="{{ url_for('telemedicine.referral_letter_pdf', appt_id=appt.id) }}" class="btn btn-secondary btn-sm" style="background:#ede9fe;color:#7c3aed;border-color:#c4b5fd;">
+      <i class="ti ti-file-type-pdf"></i>Referral Letter
+    </a>
+    {% endif %}
+    </div>
+  </div>
+  <div class="grid-2">
+    <div>
+      {% if c.symptoms %}<div class="form-group"><label>Symptoms</label><p style="font-size:13px;padding:8px;background:var(--bg);border-radius:6px;">{{ c.symptoms }}</p></div>{% endif %}
+      {% if c.diagnosis %}<div class="form-group"><label>Diagnosis</label><p style="font-size:13px;padding:8px;background:var(--bg);border-radius:6px;">{{ c.diagnosis }}</p></div>{% endif %}
+    </div>
+    <div>
+      {% if c.prescription_text %}<div class="form-group"><label>Prescription Summary</label><p style="font-size:13px;padding:8px;background:var(--bg);border-radius:6px;white-space:pre-wrap;">{{ c.prescription_text }}</p></div>{% endif %}
+      {% if c.patient_confirmed_at %}
+      <div style="background:#dcfce7;border-radius:8px;padding:10px;font-size:13px;color:#166534;">
+        Patient confirmed on {{ c.patient_confirmed_at.strftime('%d %b %Y at %H:%M') }}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% if c.prescriptions %}
+  <div class="divider"></div>
+  <div class="card-title" style="margin-bottom:12px;">Prescribed Medicines</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Medicine</th><th>Dosage</th><th>Frequency</th><th>Days</th><th></th></tr></thead>
+      <tbody>
+        {% for rx in c.prescriptions %}
+        <tr>
+          <td style="font-weight:500;">{{ rx.medicine_name }}</td>
+          <td>{{ rx.dosage or '—' }}</td>
+          <td>{{ rx.frequency or '—' }}</td>
+          <td>{{ rx.duration_days or '—' }}</td>
+          <td>
+            {% if current_user.role == 'patient' %}
+            <a href="{{ url_for('delivery.request_medicine', prescription_id=rx.id) }}"
+               class="btn btn-primary btn-sm">Request Delivery</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<div style="display:flex;gap:10px;flex-wrap:wrap;">
+  {% if appt.status == 'pending' and (current_user.role == 'doctor' and current_user.id == appt.doctor_id or current_user.facility_id == appt.facility_id) %}
+  <form method="POST" action="{{ url_for('telemedicine.confirm_appointment', appt_id=appt.id) }}">
+    <button type="submit" class="btn btn-success">Confirm Appointment</button>
+  </form>
+  {% endif %}
+
+  {% if appt.status == 'confirmed' and current_user.role == 'doctor' and current_user.id == appt.doctor_id %}
+  <a href="{{ url_for('telemedicine.complete_consultation', appt_id=appt.id) }}" class="btn btn-primary">
+    Complete Consultation
+  </a>
+  {% endif %}
+
+  {% if appt.status == 'completed' and current_user.id == appt.patient_id
+        and appt.consultation and not appt.consultation.patient_confirmed_at %}
+  <form method="POST" action="{{ url_for('telemedicine.patient_confirm', appt_id=appt.id) }}">
+    <button type="submit" class="btn btn-success">Confirm &amp; Release Payment</button>
+  </form>
+  {% endif %}
+
+  {% if appt.status == 'confirmed' and current_user.id == appt.patient_id %}
+  <a href="{{ url_for('delivery.request_transport', appt_id=appt.id) }}" class="btn btn-secondary">
+    Request Transport
+  </a>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function toggleVideoRoom() {
+  const room = document.getElementById('video-room');
+  const btn = document.getElementById('join-btn');
+  if (!room) return;
+  const showing = room.style.display !== 'none';
+  room.style.display = showing ? 'none' : 'block';
+  btn.innerHTML = showing
+    ? '<i class="ti ti-video"></i>Join Call'
+    : '<i class="ti ti-x"></i>End Call';
+  if (!showing) room.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+</script>
+{% endblock %}

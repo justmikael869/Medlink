@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Drivers — {{ company.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Our Drivers</h1>
+    <p class="page-subtitle">{{ company.name }} — {{ drivers|length }} registered drivers</p>
+  </div>
+  <a href="{{ url_for('delivery.company_dashboard') }}" class="btn btn-secondary">
+    <i class="ti ti-arrow-left"></i>Back to Dashboard
+  </a>
+</div>
+
+{% if drivers %}
+<div class="grid-auto">
+  {% for d in drivers %}
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+      <div style="width:44px;height:44px;border-radius:50%;background:var(--primary-light);
+                  display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <i class="ti ti-user" style="color:var(--primary);font-size:20px;"></i>
+      </div>
+      <div>
+        <div style="font-weight:600;font-size:14px;">{{ d.name }}</div>
+        <div style="font-size:12px;color:var(--text-muted);">{{ d.phone or d.email }}</div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;">
+      <span class="badge badge-{{ 'success' if d.is_available else 'danger' }}">
+        {{ 'Available' if d.is_available else 'Unavailable' }}
+      </span>
+      <span class="badge badge-{{ 'success' if d.verified_driver else 'warning' }}">
+        {{ 'Verified' if d.verified_driver else 'Pending' }}
+      </span>
+      {% if d.has_cold_box %}
+      <span class="badge badge-info">Cold Chain</span>
+      {% endif %}
+      {% if d.vehicle_type %}
+      <span class="badge badge-muted">{{ d.vehicle_type.title() }}</span>
+      {% endif %}
+    </div>
+
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">
+      <div>Plate: {{ d.plate_number or '—' }}</div>
+      <div style="margin-top:3px;">
+        Active deliveries:
+        <strong style="color:var(--text);">{{ driver_stats[d.id].active }}</strong>
+        &nbsp;|&nbsp; Completed:
+        <strong style="color:var(--accent);">{{ driver_stats[d.id].completed }}</strong>
+      </div>
+    </div>
+
+    <form method="POST"
+          action="{{ url_for('delivery.toggle_driver_availability', user_id=d.id) }}">
+      <button type="submit"
+              class="btn btn-{{ 'warning' if d.is_available else 'success' }} btn-sm"
+              style="width:100%;">
+        {{ 'Mark Unavailable' if d.is_available else 'Mark Available' }}
+      </button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state card">
+  <i class="ti ti-users"></i>
+  <p>No drivers registered yet.</p>
+  <p style="font-size:12px;color:var(--text-muted);margin-top:6px;">
+    Drivers can join your company from
+    <a href="{{ url_for('delivery.company_list') }}">the delivery companies page</a>.
+  </p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Welcome back, {{ current_user.name }}
+      {% if current_user.role == 'doctor' and not current_user.verified_doctor %}
+      <span class="badge badge-unverified" style="margin-left:8px;">Pending doctor verification</span>
+      {% endif %}
+    </p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="{{ url_for('telemedicine.wallet') }}" class="btn btn-secondary">
+      <i class="ti ti-wallet"></i>UGX {{ '{:,.0f}'.format(wallet_balance) }}
+    </a>
+    {% if current_user.role not in ('patient','driver') %}
+    <a href="{{ url_for('alerts.new') }}" class="btn btn-danger"><i class="ti ti-alert-triangle"></i>Raise Alert</a>
+    <a href="{{ url_for('orders.new') }}" class="btn btn-primary"><i class="ti ti-plus"></i>New Order</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Stats row -->
+<div class="stats-grid">
+  {% if current_user.role not in ('patient','driver') %}
+  <div class="stat-card">
+    <div class="stat-label">Out of Stock</div>
+    <div class="stat-value {% if out_of_stock %}red{% else %}green{% endif %}">{{ out_of_stock }}</div>
+    <div class="stat-sub">medicine lines</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Low Stock</div>
+    <div class="stat-value {% if low_stock %}orange{% else %}green{% endif %}">{{ low_stock }}</div>
+    <div class="stat-sub">below threshold</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Open Alerts</div>
+    <div class="stat-value {% if open_alerts %}orange{% else %}green{% endif %}">{{ open_alerts }}</div>
+    <div class="stat-sub">{% if critical %}{{ critical }} critical{% else %}none critical{% endif %}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Pending Orders</div>
+    <div class="stat-value {% if pending_orders %}blue{% else %}green{% endif %}">{{ pending_orders }}</div>
+    <div class="stat-sub">awaiting delivery</div>
+  </div>
+  {% endif %}
+
+  {% if current_user.role == 'doctor' %}
+  <div class="stat-card">
+    <div class="stat-label">New Requests</div>
+    <div class="stat-value {% if pending_appts %}orange{% else %}green{% endif %}">{{ pending_appts }}</div>
+    <div class="stat-sub">awaiting confirmation</div>
+  </div>
+  {% endif %}
+
+  <div class="stat-card">
+    <div class="stat-label">Health Wallet</div>
+    <div class="stat-value blue">{{ '{:,.0f}'.format(wallet_balance) }}</div>
+    <div class="stat-sub">UGX balance</div>
+  </div>
+
+  {% if current_user.role in ('system_admin','district_officer') %}
+  <div class="stat-card">
+    <div class="stat-label">Escrow Held</div>
+    <div class="stat-value orange">{{ '{:,.0f}'.format(total_escrow_held) }}</div>
+    <div class="stat-sub">UGX pending release</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Paid Out</div>
+    <div class="stat-value green">{{ '{:,.0f}'.format(total_released) }}</div>
+    <div class="stat-sub">UGX released to providers</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Active Deliveries</div>
+    <div class="stat-value {% if pending_deliveries %}blue{% else %}green{% endif %}">{{ pending_deliveries }}</div>
+    <div class="stat-sub">in progress</div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Telemedicine upcoming appointments -->
+{% if upcoming_appts %}
+<div class="card" style="margin-bottom:16px;border-left:3px solid #22c55e;">
+  <div class="card-header">
+    <span class="card-title">Upcoming Appointments</span>
+    <a href="{{ url_for('telemedicine.my_appointments') }}" class="btn btn-secondary btn-sm">View all</a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Ref</th><th>{{ 'Patient' if current_user.role == 'doctor' else 'Doctor' }}</th><th>Type</th><th>When</th><th>QR Code</th></tr></thead>
+      <tbody>
+        {% for a in upcoming_appts %}
+        <tr>
+          <td><a href="{{ url_for('telemedicine.appointment_detail', appt_id=a.id) }}" style="color:var(--primary);font-weight:500;">{{ a.reference }}</a></td>
+          <td>{% if current_user.role == 'doctor' %}{{ a.patient.name }}{% else %}{{ ('Dr ' + a.doctor.name) if a.doctor else '—' }}{% endif %}</td>
+          <td><span class="badge badge-{{ 'confirmed' if a.appt_type == 'remote' else 'pending' }}">{{ a.appt_type.replace('_',' ').title() }}</span></td>
+          <td style="color:#6b7280;font-size:12px;">{{ a.slot_time.strftime('%d %b %Y %H:%M') if a.slot_time else 'TBD' }}</td>
+          <td><code style="font-size:13px;font-weight:700;letter-spacing:2px;">{{ a.qr_code }}</code></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Quick actions -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:20px;">
+  <a href="{{ url_for('telemedicine.triage') }}"
+     style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;text-align:center;text-decoration:none;color:#166534;">
+    <div style="font-size:24px;margin-bottom:4px;"><i class="ti ti-stethoscope"></i></div>
+    <div style="font-size:12px;font-weight:600;">Symptom Check</div>
+  </a>
+  <a href="{{ url_for('telemedicine.doctor_list') }}"
+     style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px;text-align:center;text-decoration:none;color:#1e40af;">
+    <div style="font-size:24px;margin-bottom:4px;"><i class="ti ti-user-plus"></i></div>
+    <div style="font-size:12px;font-weight:600;">Book a Doctor</div>
+  </a>
+  <a href="{{ url_for('search.index') }}"
+     style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:14px;text-align:center;text-decoration:none;color:#854d0e;">
+    <div style="font-size:24px;margin-bottom:4px;"><i class="ti ti-pill"></i></div>
+    <div style="font-size:12px;font-weight:600;">Find Medicine</div>
+  </a>
+  <a href="{{ url_for('telemedicine.wallet') }}"
+     style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:10px;padding:14px;text-align:center;text-decoration:none;color:#6d28d9;">
+    <div style="font-size:24px;margin-bottom:4px;"><i class="ti ti-wallet"></i></div>
+    <div style="font-size:12px;font-weight:600;">Health Wallet</div>
+  </a>
+  {% if current_user.role in ('staff','facility_admin','system_admin') %}
+  <a href="{{ url_for('telemedicine.checkin') }}"
+     style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:14px;text-align:center;text-decoration:none;color:#9a3412;">
+    <div style="font-size:24px;margin-bottom:4px;"><i class="ti ti-qrcode"></i></div>
+    <div style="font-size:12px;font-weight:600;">QR Check-in</div>
+  </a>
+  {% endif %}
+</div>
+
+{% if current_user.role not in ('patient','driver') %}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Open Alerts</span>
+      <a href="{{ url_for('alerts.index') }}" class="btn btn-secondary btn-sm">View all</a>
+    </div>
+    {% if recent_alerts %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Medicine</th><th>Severity</th><th>When</th></tr></thead>
+        <tbody>
+          {% for a in recent_alerts %}
+          <tr>
+            <td><strong>{{ a.medicine.name }}</strong><br><small style="color:#9ca3af;">{{ a.facility.name }}</small></td>
+            <td><span class="badge badge-{{ a.severity }}">{{ a.severity }}</span></td>
+            <td style="color:#9ca3af;">{{ a.created_at.strftime('%d %b') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:#9ca3af;text-align:center;padding:20px;">No open alerts</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Recent Orders</span>
+      <a href="{{ url_for('orders.index') }}" class="btn btn-secondary btn-sm">View all</a>
+    </div>
+    {% if recent_orders %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Order</th><th>Status</th><th>Total</th></tr></thead>
+        <tbody>
+          {% for o in recent_orders %}
+          <tr>
+            <td><a href="{{ url_for('orders.detail', order_id=o.id) }}" style="color:var(--primary);font-weight:500;">{{ o.order_number }}</a><br>
+              <small style="color:#9ca3af;">{{ o.external_supplier or (o.seller.name if o.seller else '—') }}</small></td>
+            <td><span class="badge badge-{{ o.status }}">{{ o.status }}</span></td>
+            <td>{{ '{:,.0f}'.format(o.total_amount) }} {{ o.currency }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:#9ca3af;text-align:center;padding:20px;">No orders yet</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if recent_tx %}
+<div class="card" style="margin-top:16px;">
+  <div class="card-header"><span class="card-title">Recent Stock Transactions (7 days)</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Medicine</th><th>Type</th><th>Change</th><th>After</th><th>When</th></tr></thead>
+      <tbody>
+        {% for tx in recent_tx %}
+        <tr>
+          <td>{{ tx.stock_item.medicine.name }}</td>
+          <td><span class="badge badge-{{ 'resolved' if tx.quantity_change >0 else 'medium' }}">{{ tx.transaction_type }}</span></td>
+          <td style="color:{{ '#22c55e' if tx.quantity_change >0 else '#ef4444' }};">
+            {{ '+' if tx.quantity_change >0 else '' }}{{ tx.quantity_change }}
+          </td>
+          <td>{{ tx.quantity_after }}</td>
+          <td style="color:#9ca3af;">{{ tx.created_at.strftime('%d %b %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

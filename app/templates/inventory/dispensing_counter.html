@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% block title %}Dispensing Counter — MedLink{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Dispensing Counter</h1>
+    <p class="page-subtitle">Search for a medicine, record patient details, and confirm dispense. Stock is updated automatically.</p>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start;">
+
+  <!-- LEFT: Search + Dispense Form -->
+  <div>
+    <!-- Medicine Search -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="ti ti-search" style="color:var(--primary);"></i>
+          Search Medicine
+        </h3>
+      </div>
+      <div class="card-body">
+        <form method="GET" action="{{ url_for('inventory.dispensing_counter') }}">
+          <div class="form-group">
+            <label class="form-label">Medicine Name or Generic Name</label>
+            <div style="display:flex;gap:0.5rem;">
+              <input
+                type="text"
+                name="q"
+                class="form-control"
+                placeholder="e.g. Amoxicillin, Paracetamol, Metformin..."
+                value="{{ search_q }}"
+                autofocus
+              >
+              <button type="submit" class="btn btn-primary" style="white-space:nowrap;">
+                <i class="ti ti-search"></i>Search
+              </button>
+            </div>
+          </div>
+        </form>
+
+        {% if search_q and not stock_items %}
+        <div class="alert alert-warning" style="margin-top:1rem;">
+          <i class="ti ti-alert-triangle"></i>
+          No in-stock medicines matching <strong>"{{ search_q }}"</strong>found at your facility.
+        </div>
+        {% endif %}
+
+        {% if stock_items %}
+        <div style="margin-top:1rem;">
+          <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.5rem;">
+            {{ stock_items|length }} result(s) — click a row to select
+          </p>
+          <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+            <table class="data-table" style="margin:0;">
+              <thead>
+                <tr>
+                  <th>Medicine</th>
+                  <th>Form</th>
+                  <th style="text-align:right;">In Stock</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in stock_items %}
+                <tr
+                  class="stock-select-row"
+                  style="cursor:pointer;"
+                  data-id="{{ item.id }}"
+                  data-name="{{ item.medicine.name }}"
+                  data-generic="{{ item.medicine.generic_name or '' }}"
+                  data-unit="{{ item.medicine.unit }}"
+                  data-qty="{{ item.quantity }}"
+                  data-price="{{ item.sell_price or 0 }}"
+                  data-cold="{{ '1' if item.medicine.requires_cold_chain else '0' }}"
+                >
+                  <td>
+                    <strong>{{ item.medicine.name }}</strong>
+                    {% if item.medicine.generic_name %}<br><span style="font-size:0.8rem;color:var(--text-muted);">{{ item.medicine.generic_name }}</span>{% endif %}
+                    {% if item.medicine.requires_cold_chain %}
+                    <span class="badge badge-info" style="font-size:0.7rem;margin-left:4px;">Cold Chain</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ item.medicine.dosage_form or '—' }}</td>
+                  <td style="text-align:right;">
+                    <span class="{% if item.quantity <= item.minimum_threshold %}badge badge-danger{% else %}badge badge-success{% endif %}">
+                      {{ item.quantity }} {{ item.medicine.unit }}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline select-medicine-btn"
+                      data-id="{{ item.id }}"
+                      data-name="{{ item.medicine.name }}"
+                      data-unit="{{ item.medicine.unit }}"
+                      data-qty="{{ item.quantity }}"
+                    >
+                      Select
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Dispense Form -->
+    <div class="card" id="dispense-form-card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="ti ti-pill" style="color:var(--primary);"></i>
+          Record Dispense
+        </h3>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('inventory.dispensing_counter') }}" id="dispense-form">
+
+          <!-- Selected medicine display -->
+          <div id="selected-medicine-display" style="display:none;background:var(--primary-light);border:1px solid var(--primary);border-radius:8px;padding:1rem;margin-bottom:1.25rem;">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+              <div>
+                <p style="font-weight:600;color:var(--primary);margin:0 0 0.25rem;" id="selected-name">—</p>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin:0;" id="selected-unit">—</p>
+              </div>
+              <div style="text-align:right;">
+                <p style="font-size:0.8rem;color:var(--text-muted);margin:0;">Available</p>
+                <p style="font-weight:700;font-size:1.2rem;margin:0;" id="selected-qty">—</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="no-selection-msg" style="background:var(--surface);border:1px dashed var(--border);border-radius:8px;padding:1.5rem;text-align:center;margin-bottom:1.25rem;color:var(--text-muted);">
+            <i class="ti ti-hand-click" style="font-size:2rem;display:block;margin-bottom:0.5rem;"></i>
+            Search and select a medicine above to begin
+          </div>
+
+          <input type="hidden" name="stock_id" id="stock_id_input">
+
+          <div class="form-group">
+            <label class="form-label">Patient Name <span style="color:var(--danger);">*</span></label>
+            <input type="text" name="dispensed_to" class="form-control" placeholder="Full name of patient receiving the medicine" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Patient ID / Card Number <span style="color:var(--text-muted);font-size:0.8rem;">(optional)</span></label>
+            <input type="text" name="patient_ref" class="form-control" placeholder="OPD number, national ID, insurance card...">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Quantity to Dispense <span style="color:var(--danger);">*</span></label>
+            <input type="number" name="quantity" id="qty_input" class="form-control" min="1" value="1" required>
+            <p class="form-hint" id="qty-hint" style="display:none;">Maximum available: <strong id="max-qty">—</strong></p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Additional Notes <span style="color:var(--text-muted);font-size:0.8rem;">(optional)</span></label>
+            <textarea name="note" class="form-control" rows="2" placeholder="Dosage instructions, prescriber name, batch notes..."></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="dispense-btn" disabled style="width:100%;margin-top:0.5rem;">
+            <i class="ti ti-check"></i>Confirm Dispense
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Recent Dispense History -->
+  <div class="card">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <h3 class="card-title">
+        <i class="ti ti-history" style="color:var(--primary);"></i>
+        Recent Dispenses
+      </h3>
+      <span style="font-size:0.8rem;color:var(--text-muted);">Last 30 records</span>
+    </div>
+    <div class="card-body" style="padding:0;">
+      {% if recent_txns %}
+      <div style="overflow-y:auto;max-height:75vh;">
+        <table class="data-table" style="margin:0;font-size:0.875rem;">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Medicine</th>
+              <th>Patient</th>
+              <th style="text-align:right;">Qty</th>
+              <th>By</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for tx in recent_txns %}
+            <tr>
+              <td style="white-space:nowrap;color:var(--text-muted);">
+                {{ tx.created_at.strftime('%d %b %H:%M') }}
+              </td>
+              <td>
+                <strong>{{ tx.stock_item.medicine.name }}</strong>
+                {% if tx.stock_item.medicine.dosage_form %}
+                <br><span style="font-size:0.75rem;color:var(--text-muted);">{{ tx.stock_item.medicine.dosage_form }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {{ tx.dispensed_to }}
+                {% if tx.patient_ref %}
+                <br><span style="font-size:0.75rem;color:var(--text-muted);">Ref: {{ tx.patient_ref }}</span>
+                {% endif %}
+              </td>
+              <td style="text-align:right;font-weight:600;color:var(--danger);">
+                {{ tx.quantity_change|abs }} {{ tx.stock_item.medicine.unit }}
+              </td>
+              <td style="color:var(--text-muted);font-size:0.8rem;">
+                {{ tx.performer.name.split()[0] if tx.performer else '—' }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div style="padding:3rem;text-align:center;color:var(--text-muted);">
+        <i class="ti ti-clipboard-list" style="font-size:2.5rem;display:block;margin-bottom:0.75rem;"></i>
+        No dispenses recorded yet at this facility.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<script>
+document.querySelectorAll('.select-medicine-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var id = this.dataset.id;
+    var name = this.dataset.name;
+    var unit = this.dataset.unit;
+    var qty = this.dataset.qty;
+
+    document.getElementById('stock_id_input').value = id;
+    document.getElementById('selected-name').textContent = name;
+    document.getElementById('selected-unit').textContent = unit;
+    document.getElementById('selected-qty').textContent = qty + ' ' + unit;
+    document.getElementById('max-qty').textContent = qty + ' ' + unit;
+    document.getElementById('qty_input').max = qty;
+    document.getElementById('qty_input').value = 1;
+
+    document.getElementById('selected-medicine-display').style.display = 'block';
+    document.getElementById('no-selection-msg').style.display = 'none';
+    document.getElementById('qty-hint').style.display = 'block';
+    document.getElementById('dispense-btn').disabled = false;
+
+    // Highlight selected row
+    document.querySelectorAll('.stock-select-row').forEach(function(r) {
+      r.style.background = '';
+    });
+    var row = document.querySelector('.stock-select-row[data-id="' + id + '"]');
+    if (row) row.style.background = 'var(--primary-light)';
+
+    document.getElementById('dispense-form-card').scrollIntoView({behavior:'smooth', block:'start'});
+  });
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Symptom Triage — MedLink{% endblock %}
+{% block public_content %}{% block content %}
+<div style="max-width:600px;margin:0 auto;">
+  <div style="text-align:center;margin-bottom:24px;">
+    <div style="font-size:36px;margin-bottom:8px;color:var(--primary);"><i class="ti ti-stethoscope"></i></div>
+    <h1 style="font-size:22px;font-weight:700;">Quick Symptom Check</h1>
+    <p style="color:#6b7280;font-size:14px;">Answer a few questions so we can guide you to the right care.</p>
+  </div>
+  <div class="card">
+    <form method="POST">
+      <div class="form-group">
+        <label>Describe your main symptoms *</label>
+        <textarea name="symptoms" required placeholder="e.g. headache, fever, cough for 3 days..." rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>How long have you had these symptoms?</label>
+        <select name="duration">
+          <option value="today">Started today</option>
+          <option value="1-3days">1–3 days</option>
+          <option value="4-7days">4–7 days</option>
+          <option value="over1week">More than a week</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>How severe do your symptoms feel?</label>
+        <select name="severity_self">
+          <option value="mild">Mild — I can manage daily activities</option>
+          <option value="moderate">Moderate — affecting my daily life</option>
+          <option value="severe">Severe — I'm struggling significantly</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px;">
+        <label class="checkbox-label" style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;">
+          <input type="checkbox" name="fever" value="yes">Do you have a fever?
+        </label>
+        <label class="checkbox-label" style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;">
+          <input type="checkbox" name="breathing" value="yes">Difficulty breathing?
+        </label>
+        <label class="checkbox-label" style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;">
+          <input type="checkbox" name="chest_pain" value="yes">Chest pain?
+        </label>
+        <label class="checkbox-label" style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;">
+          <input type="checkbox" name="pregnancy" value="yes">Are you pregnant?
+        </label>
+        <label class="checkbox-label" style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;">
+          <input type="checkbox" name="child" value="yes">Is this for a child under 5?
+        </label>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;padding:12px;">Check My Symptoms →</button>
+    </form>
+  </div>
+  <p style="text-align:center;font-size:12px;color:#9ca3af;margin-top:12px;">
+    This is a guidance tool, not a medical diagnosis. Always consult a qualified doctor.
+  </p>
+</div>
+{% endblock %}{% endblock %}

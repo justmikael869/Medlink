@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Users — Admin{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Users</h1>
+  <span style="font-size:13px;color:#6b7280;">{{ users|length }} registered</span>
+</div>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Facility</th><th>Phone</th><th>Last login</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td><strong>{{ u.name }}</strong></td>
+          <td style="font-size:12px;">{{ u.email }}</td>
+          <td><span class="badge badge-acknowledged">{{ u.role.replace('_',' ').title() }}</span></td>
+          <td style="font-size:12px;">{{ u.facility.name if u.facility else '—' }}</td>
+          <td style="font-size:12px;">{{ u.phone or '—' }}</td>
+          <td style="font-size:12px;color:#9ca3af;">{{ u.last_login.strftime('%d %b %Y') if u.last_login else 'Never' }}</td>
+          <td>
+            <span class="badge {{ 'badge-resolved' if u.active else 'badge-out_of_stock' }}">
+              {{ 'Active' if u.active else 'Inactive' }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

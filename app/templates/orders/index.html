@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Orders — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Orders</h1>
+  <a href="{{ url_for('orders.new') }}" class="btn btn-primary">+ New Order</a>
+</div>
+
+{% if incoming %}
+<div class="card" style="margin-bottom:14px;">
+  <div class="card-header"><span class="card-title">Incoming Orders (to fulfill)</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Order #</th><th>From</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for o in incoming %}
+        <tr>
+          <td><a href="{{ url_for('orders.detail', order_id=o.id) }}" style="color:var(--primary);font-weight:500;">{{ o.order_number }}</a></td>
+          <td>{{ o.buyer.name }}</td>
+          <td>{{ o.items|length }} items</td>
+          <td>{{ '{:,.0f}'.format(o.total_amount) }} {{ o.currency }}</td>
+          <td><span class="badge badge-{{ o.status }}">{{ o.status }}</span></td>
+          <td style="color:#9ca3af;">{{ o.created_at.strftime('%d %b %Y') }}</td>
+          <td><a href="{{ url_for('orders.detail', order_id=o.id) }}" class="btn btn-secondary btn-sm">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header"><span class="card-title">My Orders</span></div>
+  {% if orders %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Order #</th><th>Supplier</th><th>Items</th><th>Total</th><th>Status</th><th>Expected</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td><a href="{{ url_for('orders.detail', order_id=o.id) }}" style="color:var(--primary);font-weight:500;">{{ o.order_number }}</a></td>
+          <td>{{ o.external_supplier or (o.seller.name if o.seller else '—') }}</td>
+          <td>{{ o.items|length }}</td>
+          <td>{{ '{:,.0f}'.format(o.total_amount) }} {{ o.currency }}</td>
+          <td><span class="badge badge-{{ o.status }}">{{ o.status }}</span></td>
+          <td style="color:#9ca3af;">{{ o.expected_delivery.strftime('%d %b %Y') if o.expected_delivery else '—' }}</td>
+          <td style="color:#9ca3af;">{{ o.created_at.strftime('%d %b %Y') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="text-align:center;color:#9ca3af;padding:32px;">No orders yet. <a href="{{ url_for('orders.new') }}">Place first order →</a></p>
+  {% endif %}
+</div>
+{% endblock %}

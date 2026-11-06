@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}GAD-7 Anxiety Screen — MedLink{% endblock %}
+{% block head %}
+<style>
+.q-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:12px;transition:border-color .2s;}
+.q-card:focus-within{border-color:#16a34a;}
+.q-text{font-size:14px;font-weight:500;margin-bottom:14px;line-height:1.5;}
+.opt-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.opt-label{position:relative;cursor:pointer;}
+.opt-label input{position:absolute;opacity:0;width:0;height:0;}
+.opt-box{border:1.5px solid var(--border);border-radius:8px;padding:10px 6px;text-align:center;font-size:12px;line-height:1.4;transition:all .15s;background:var(--surface-2);}
+.opt-label input:checked ~ .opt-box{background:#16a34a;color:#fff;border-color:#16a34a;}
+</style>
+{% endblock %}
+{% block public_content %}{% block content %}
+<div style="max-width:620px;margin:0 auto;">
+  <div style="text-align:center;margin-bottom:24px;">
+    <div style="font-size:30px;margin-bottom:8px;color:#16a34a;"><i class="ti ti-mood-confuzed"></i></div>
+    <h1 style="font-size:20px;font-weight:700;margin-bottom:6px;">GAD-7 Anxiety Screening</h1>
+    <p style="font-size:13px;color:var(--text-muted);max-width:440px;margin:0 auto;">
+      Over the past 2 weeks, how often have you been bothered by the following? Takes about 1 minute.
+    </p>
+  </div>
+  <form method="POST">
+    {% for q in questions %}{% set i = loop.index0 %}
+    <div class="q-card">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Question {{ i+1 }} of {{ questions|length }}</div>
+      <div class="q-text">{{ q }}</div>
+      <div class="opt-row">
+        {% for val, lbl in options %}
+        <label class="opt-label">
+          <input type="radio" name="q{{ i }}" value="{{ val }}" required>
+          <div class="opt-box">
+            <div style="font-size:16px;margin-bottom:2px;">{% if val==0 %}{% elif val==1 %}{% elif val==2 %}{% else %}{% endif %}</div>
+            {{ lbl }}
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">See my results</button>
+  </form>
+</div>
+{% endblock %}{% endblock %}

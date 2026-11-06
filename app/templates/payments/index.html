@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Payments — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Payments</h1>
+    <p class="page-subtitle">All transactions processed through MedLink escrow</p>
+  </div>
+  {% if current_user.role == 'system_admin' %}
+  <a href="{{ url_for('payments.audit_log') }}" class="btn btn-secondary">Audit Log</a>
+  {% endif %}
+</div>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Reference</th><th>Type</th><th>Amount (UGX)</th><th>Fee</th><th>Net</th><th>Status</th><th>Date</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for p in payments %}
+        <tr>
+          <td><strong>{{ p.reference }}</strong></td>
+          <td><span class="badge badge-{{ p.payment_type or 'pending' }}">{{ (p.payment_type or '').replace('_',' ').title() }}</span></td>
+          <td>{{ '{:,.0f}'.format(p.amount_ugx) }}</td>
+          <td style="color:#9ca3af;font-size:12px;">{{ '{:,.0f}'.format(p.platform_fee_ugx) }}</td>
+          <td style="font-weight:600;">{{ '{:,.0f}'.format(p.net_amount_ugx) }}</td>
+          <td><span class="badge badge-{{ p.status }}">{{ p.status.title() }}</span></td>
+          <td style="color:#9ca3af;font-size:12px;">{{ p.created_at.strftime('%d %b %Y') }}</td>
+          <td><a href="{{ url_for('payments.detail', pay_id=p.id) }}" class="btn btn-secondary btn-sm">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

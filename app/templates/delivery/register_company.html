@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Register Delivery Company — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:540px;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Register a Delivery Company</h1>
+      <p class="page-subtitle">MedLink admin will verify your company before orders are assigned</p>
+    </div>
+    <a href="{{ url_for('delivery.company_list') }}" class="btn btn-secondary">← Back</a>
+  </div>
+  <div class="card">
+    <form method="POST">
+      <div class="form-group">
+        <label>Company Name *</label>
+        <input name="name" required placeholder="e.g. SafeBoda Deliveries Ltd">
+      </div>
+      <div class="form-group">
+        <label>Contact Phone *</label>
+        <input name="phone" type="tel" required placeholder="+256700000000">
+      </div>
+      <div class="form-group">
+        <label>Contact Email</label>
+        <input name="email" type="email" placeholder="info@yourcompany.com">
+      </div>
+      <div style="background:#eff6ff;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;">
+         <strong>How it works:</strong><br>
+        1. You register your company<br>
+        2. MedLink admin verifies your business documents<br>
+        3. Your drivers join under your company account<br>
+        4. MedLink assigns orders to your company and pays you directly<br>
+        5. You manage your drivers' pay — no individual negotiations
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Submit for Verification</button>
+        <a href="{{ url_for('delivery.company_list') }}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

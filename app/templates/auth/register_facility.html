@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Register Facility — MedLink Uganda{% endblock %}
+{% block public_content %}
+
+<div style="max-width:700px;margin:2rem auto;padding:0 1rem;">
+  <div style="margin-bottom:1.5rem;">
+    <a href="{{ url_for('auth.register_choose') }}" style="color:var(--text-muted);font-size:0.875rem;text-decoration:none;">
+      <i class="ti ti-arrow-left"></i>Back to registration options
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title"><i class="ti ti-building-hospital" style="color:var(--primary);"></i>Register Your Facility</h2>
+      <p style="color:var(--text-muted);font-size:0.875rem;margin:0.25rem 0 0;">
+        After registration, the system admin will review and verify your facility. You can log in immediately and begin setup.
+      </p>
+    </div>
+    <div class="card-body">
+      <form method="POST">
+
+        <div style="background:var(--surface);border-radius:8px;padding:1.25rem;margin-bottom:1.5rem;border-left:3px solid var(--primary);">
+          <h4 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Facility Information</h4>
+
+          <div class="form-group">
+            <label class="form-label">Facility Name <span style="color:var(--danger);">*</span></label>
+            <input type="text" name="facility_name" class="form-control" placeholder="e.g. Kampala City Pharmacy, St. Francis Hospital" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Facility Type <span style="color:var(--danger);">*</span></label>
+            <select name="facility_type" class="form-control" id="facility_type_select" required>
+              {% for val, label in facility_types %}
+              <option value="{{ val }}" {% if request.args.get('type') == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-group">
+              <label class="form-label">District <span style="color:var(--danger);">*</span></label>
+              <select name="district_id" class="form-control" required>
+                <option value="">Select district...</option>
+                {% for d in districts %}
+                <option value="{{ d.id }}">{{ d.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Licence / Registration Number</label>
+              <input type="text" name="licence_no" class="form-control" placeholder="NDA, MOH, or professional licence no.">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Physical Address</label>
+            <input type="text" name="address" class="form-control" placeholder="Street, building, area">
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-group">
+              <label class="form-label">Facility Phone</label>
+              <input type="tel" name="facility_phone" class="form-control" placeholder="+256 ...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Facility Email</label>
+              <input type="email" name="facility_email" class="form-control" placeholder="info@yourfacility.ug">
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-group">
+              <label class="form-label">Latitude <span style="color:var(--text-muted);font-size:0.8rem;">(GPS)</span></label>
+              <input type="number" step="any" name="latitude" id="lat_field" class="form-control" placeholder="0.3476">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Longitude <span style="color:var(--text-muted);font-size:0.8rem;">(GPS)</span></label>
+              <input type="number" step="any" name="longitude" id="lng_field" class="form-control" placeholder="32.5825">
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline" id="gps_btn" style="margin-top:-0.5rem;">
+            <i class="ti ti-current-location"></i>Use My Current Location
+          </button>
+        </div>
+
+        <div style="background:var(--surface);border-radius:8px;padding:1.25rem;margin-bottom:1.5rem;border-left:3px solid #2e7d32;">
+          <h4 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Facility Administrator Account</h4>
+          <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem;">This account will be the administrator for your facility. You can add other staff after logging in.</p>
+
+          <div class="form-group">
+            <label class="form-label">Your Full Name <span style="color:var(--danger);">*</span></label>
+            <input type="text" name="admin_name" class="form-control" placeholder="Full name" required>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-group">
+              <label class="form-label">Your Email <span style="color:var(--danger);">*</span></label>
+              <input type="email" name="admin_email" class="form-control" placeholder="you@email.com" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Your Phone</label>
+              <input type="tel" name="admin_phone" class="form-control" placeholder="+256 ...">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Password <span style="color:var(--danger);">*</span></label>
+            <input type="password" name="password" class="form-control" minlength="6" required>
+            <p class="form-hint">Minimum 6 characters.</p>
+          </div>
+        </div>
+
+        <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:1rem;margin-bottom:1.5rem;font-size:0.85rem;color:#5d4037;">
+          <i class="ti ti-info-circle"></i>
+          Your facility will be marked <strong>Pending Verification</strong>until a system admin reviews your registration. All core features are available immediately.
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%;">
+          <i class="ti ti-check"></i>Submit Registration
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('gps_btn').addEventListener('click', function() {
+  if (!navigator.geolocation) { alert('Geolocation not supported by your browser.'); return; }
+  this.textContent = 'Getting location...';
+  var btn = this;
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    document.getElementById('lat_field').value = pos.coords.latitude.toFixed(6);
+    document.getElementById('lng_field').value = pos.coords.longitude.toFixed(6);
+    btn.innerHTML = '<i class="ti ti-check"></i>Location captured';
+  }, function() {
+    btn.innerHTML = '<i class="ti ti-current-location"></i>Use My Current Location';
+    alert('Could not get your location. Please enter coordinates manually.');
+  });
+});
+</script>
+{% endblock %}

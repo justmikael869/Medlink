@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Compare Medicine Prices — MedLink{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Medicine Price Comparison</h1>
+    <p class="page-subtitle">Compare prices per unit across all verified suppliers on MedLink.</p>
+  </div>
+</div>
+
+<!-- Search -->
+<div class="card" style="margin-bottom:1.5rem;">
+  <div class="card-body">
+    <form method="GET" style="display:flex;gap:1rem;align-items:flex-end;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <label class="form-label">Search Medicine</label>
+        <input type="text" name="q" class="form-control" placeholder="Type a medicine name..." value="{{ search }}">
+      </div>
+      <div style="flex:1;min-width:200px;">
+        <label class="form-label">Or select from list</label>
+        <select name="medicine_id" class="form-control" onchange="this.form.submit()">
+          <option value="">— Choose medicine —</option>
+          {% for m in medicines %}
+          <option value="{{ m.id }}" {% if selected_medicine and selected_medicine.id == m.id %}selected{% endif %}>
+            {{ m.name }}{% if m.generic_name %} ({{ m.generic_name }}){% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <button type="submit" class="btn btn-primary"><i class="ti ti-search"></i>Search</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Search results (medicine list) -->
+{% if search and not selected_medicine and medicines %}
+<div class="card" style="margin-bottom:1.5rem;">
+  <div class="card-header"><h3 class="card-title">Search Results</h3></div>
+  <div class="card-body" style="padding:0;">
+    <table class="data-table">
+      <thead><tr><th>Medicine</th><th>Generic Name</th><th>Form</th><th>Category</th><th></th></tr></thead>
+      <tbody>
+        {% for m in medicines %}
+        <tr>
+          <td><strong>{{ m.name }}</strong></td>
+          <td>{{ m.generic_name or '—' }}</td>
+          <td>{{ m.dosage_form or '—' }}</td>
+          <td>{{ m.category or '—' }}</td>
+          <td><a href="{{ url_for('supplier.compare_prices', medicine_id=m.id) }}" class="btn btn-sm btn-outline">Compare Prices</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Price comparison table -->
+{% if selected_medicine %}
+<div class="card">
+  <div class="card-header" style="display:flex;justify-content:space-between;align-items:start;">
+    <div>
+      <h3 class="card-title">{{ selected_medicine.name }}</h3>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.25rem;">
+        {% if selected_medicine.generic_name %}<span class="badge badge-info">Generic: {{ selected_medicine.generic_name }}</span>{% endif %}
+        {% if selected_medicine.dosage_form %}<span class="badge badge-info">{{ selected_medicine.dosage_form }}</span>{% endif %}
+        {% if selected_medicine.strength %}<span class="badge badge-info">{{ selected_medicine.strength }}</span>{% endif %}
+        {% if selected_medicine.unit %}<span class="badge badge-info">per {{ selected_medicine.unit }}</span>{% endif %}
+        {% if selected_medicine.requires_cold_chain %}<span class="badge badge-warning">Cold Chain Required</span>{% endif %}
+        {% if selected_medicine.prescription_required %}<span class="badge badge-danger">Prescription Required</span>{% endif %}
+      </div>
+    </div>
+    {% if entries %}
+    <div style="text-align:right;">
+      <p style="font-size:0.8rem;color:var(--text-muted);margin:0;">Cheapest option</p>
+      <p style="font-size:1.4rem;font-weight:700;color:var(--success);margin:0;">UGX {{ '{:,.0f}'.format(entries[0].unit_price_ugx) }}</p>
+      <p style="font-size:0.75rem;color:var(--text-muted);">per {{ selected_medicine.unit or 'unit' }} at {{ entries[0].supplier.name }}</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card-body" style="padding:0;">
+    {% if not entries %}
+    <div style="padding:3rem;text-align:center;color:var(--text-muted);">
+      <i class="ti ti-package-off" style="font-size:2.5rem;display:block;margin-bottom:0.75rem;"></i>
+      No verified supplier currently has <strong>{{ selected_medicine.name }}</strong>in stock.
+      <br><br>
+      <a href="{{ url_for('admin.propose_medicine') }}" class="btn btn-outline">Propose to Add This Medicine</a>
+    </div>
+    {% else %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Supplier</th>
+          <th>District</th>
+          <th style="text-align:right;">Price per {{ selected_medicine.unit or 'unit' }}</th>
+          <th style="text-align:right;">Min. Order</th>
+          <th>Lead Time</th>
+          <th>Last Updated</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set cheapest = entries[0].unit_price_ugx %}
+        {% for entry in entries %}
+        <tr {% if loop.index == 1 %}style="background:var(--success-light, #e8f5e9);"{% endif %}>
+          <td>
+            {% if loop.index == 1 %}
+            <span class="badge badge-success">#1 Best Price</span>
+            {% elif (entry.unit_price_ugx - cheapest) / cheapest < 0.1 %}
+            <span class="badge badge-info">#{{ loop.index }}</span>
+            {% else %}
+            <span style="color:var(--text-muted);">#{{ loop.index }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <strong>{{ entry.supplier.name }}</strong>
+            {% if entry.supplier.supplier_type %}
+            <br><span style="font-size:0.75rem;color:var(--text-muted);">{{ entry.supplier.supplier_type.title() }} distributor</span>
+            {% endif %}
+          </td>
+          <td>{{ entry.supplier.district.name if entry.supplier.district else '—' }}</td>
+          <td style="text-align:right;">
+            <strong style="font-size:1.05rem;">UGX {{ '{:,.0f}'.format(entry.unit_price_ugx) }}</strong>
+            {% if loop.index >1 %}
+            <br><span style="font-size:0.75rem;color:var(--danger);">
+              +{{ '{:.0f}'.format((entry.unit_price_ugx - cheapest) / cheapest * 100) }}% vs best
+            </span>
+            {% endif %}
+          </td>
+          <td style="text-align:right;">{{ entry.min_order_qty }} {{ selected_medicine.unit or 'units' }}</td>
+          <td>
+            {% if entry.lead_time_days == 0 %}
+            <span class="badge badge-success">Same day</span>
+            {% elif entry.lead_time_days <= 2 %}
+            <span class="badge badge-info">{{ entry.lead_time_days }} day(s)</span>
+            {% else %}
+            {{ entry.lead_time_days }} days
+            {% endif %}
+          </td>
+          <td style="font-size:0.8rem;color:var(--text-muted);">
+            {{ entry.last_updated.strftime('%d %b %Y') if entry.last_updated else '—' }}
+          </td>
+          <td>
+            {% if current_user.is_authenticated and current_user.facility %}
+            <a href="{{ url_for('supplier.place_order', supplier_id=entry.supplier.id) }}" class="btn btn-sm btn-primary">
+              Order
+            </a>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-outline">Login to Order</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div style="padding:1rem 1.5rem;border-top:1px solid var(--border);background:var(--surface);font-size:0.8rem;color:var(--text-muted);">
+      <i class="ti ti-info-circle"></i>
+      Prices shown are per {{ selected_medicine.unit or 'unit' }} and are indicative. Final price may vary based on order quantity.
+      Prices last updated by each individual supplier. All suppliers on MedLink are verified by the system admin.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if not selected_medicine and not search %}
+<div class="card" style="text-align:center;padding:4rem 2rem;">
+  <i class="ti ti-chart-bar" style="font-size:3rem;color:var(--primary);display:block;margin-bottom:1rem;"></i>
+  <h3 style="color:var(--text-primary);margin-bottom:0.5rem;">Compare Prices Across All Suppliers</h3>
+  <p style="color:var(--text-muted);max-width:400px;margin:0 auto 1.5rem;">
+    Search for any medicine above to see prices from every verified supplier on MedLink, ranked from cheapest to most expensive.
+  </p>
+  <p style="color:var(--text-muted);font-size:0.85rem;">
+    All prices are in Ugandan Shillings (UGX) per unit.
+  </p>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Blood Availability — MedLink Uganda{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+.blood-hero{background:linear-gradient(135deg,#7f1d1d 0%,#dc2626 100%);border-radius:16px;padding:32px;color:#fff;margin-bottom:20px;}
+.bt-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px;}
+.bt-card{border-radius:10px;padding:14px;text-align:center;border:2px solid transparent;cursor:pointer;text-decoration:none;display:block;transition:all .15s;}
+.bt-card.has-stock{background:#fef2f2;border-color:#fca5a5;}
+.bt-card.urgent{background:#fee2e2;border-color:#ef4444;animation:pulse 2s infinite;}
+.bt-card.empty{background:var(--surface-2);border-color:var(--border);opacity:.6;}
+.bt-card.selected{border-color:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.2);}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}50%{box-shadow:0 0 0 6px rgba(239,68,68,0)}}
+#blood-map{height:320px;border-radius:12px;margin-bottom:16px;}
+</style>
+{% endblock %}
+{% block public_content %}{% block content %}
+
+<div class="blood-hero">
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:space-between;">
+    <div>
+      <div style="font-size:30px;margin-bottom:8px;"><i class="ti ti-droplet"></i></div>
+      <h1 style="font-size:22px;font-weight:700;margin-bottom:6px;">Blood Availability</h1>
+      <p style="font-size:13px;opacity:.85;max-width:440px;">
+        Real-time blood stock across Uganda's hospitals and blood banks.
+        Free to search — no login needed.
+      </p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <a href="{{ url_for('blood.request_blood') }}" class="btn" style="background:#fff;color:#dc2626;border:none;font-weight:600;">
+        <i class="ti ti-alert-triangle"></i> Request Blood Urgently
+      </a>
+      <a href="{{ url_for('blood.register_donor') }}" class="btn" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);">
+        <i class="ti ti-heart"></i> Register as Donor
+      </a>
+    </div>
+  </div>
+  {% if urgent %}
+  <div style="margin-top:14px;background:rgba(0,0,0,.2);border-radius:10px;padding:12px 16px;font-size:13px;">
+    <strong>Urgent needs right now:</strong>
+    {% for u in urgent %}
+    <span style="background:rgba(255,255,255,.2);border-radius:4px;padding:2px 8px;margin:2px 3px;display:inline-block;">
+      {{ u.blood_type }} at {{ u.facility.name }}
+    </span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- Blood type filter grid -->
+<div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Available blood types across Uganda</div>
+<div class="bt-grid">
+  {% for bt in blood_types %}
+  {% set units = totals.get(bt, 0) %}
+  <a href="{{ url_for('blood.index', type=bt) }}" 
+     class="bt-card {% if units == 0 %}empty{% elif units < 5 %}urgent{% else %}has-stock{% endif %} {% if selected_type == bt %}selected{% endif %}">
+    <div style="font-size:20px;font-weight:800;color:{% if units==0 %}var(--text-muted){% elif units<5 %}#dc2626{% else %}#dc2626{% endif %};">{{ bt }}</div>
+    <div style="font-size:18px;font-weight:700;color:{% if units==0 %}var(--text-muted){% else %}#111{% endif %};">{{ units }}</div>
+    <div style="font-size:10px;color:var(--text-muted);">units</div>
+    {% if units >0 and units < 5 %}<div style="font-size:9px;color:#dc2626;font-weight:600;margin-top:2px;">CRITICAL</div>{% endif %}
+    {% if units == 0 %}<div style="font-size:9px;color:var(--text-muted);margin-top:2px;">not available</div>{% endif %}
+  </a>
+  {% endfor %}
+</div>
+{% if selected_type %}
+<a href="{{ url_for('blood.index') }}" style="font-size:12px;color:var(--text-muted);">← Show all types</a>
+{% endif %}
+
+<!-- Map -->
+<div id="blood-map"></div>
+
+<!-- Facilities list -->
+{% if facilities_map %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">
+      {% if selected_type %}{{ selected_type }} blood{% else %}All blood{% endif %}
+      available at {{ facilities_map|length }} facility/ies
+    </span>
+  </div>
+  {% for fid, data in facilities_map.items() %}
+  <div style="padding:14px 0;{% if not loop.last %}border-bottom:0.5px solid var(--border);{% endif %}">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div>
+        <div style="font-size:14px;font-weight:600;">{{ data.facility.name }}</div>
+        <div style="font-size:12px;color:var(--text-muted);">{{ data.facility.address or '' }} · {{ data.facility.district.name if data.facility.district else '' }}</div>
+        {% if data.facility.phone %}<div style="font-size:12px;margin-top:2px;"><a href="tel:{{ data.facility.phone }}">{{ data.facility.phone }}</a></div>{% endif %}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        {% for s in data.stocks %}
+        <div style="background:{% if s.is_urgent %}#fee2e2;border:1px solid #fca5a5{% else %}#fef2f2;border:1px solid #fecaca{% endif %};border-radius:8px;padding:6px 10px;text-align:center;min-width:52px;">
+          <div style="font-size:13px;font-weight:700;color:#dc2626;">{{ s.blood_type }}</div>
+          <div style="font-size:12px;font-weight:600;">{{ s.units_available }}</div>
+          <div style="font-size:10px;color:var(--text-muted);">units</div>
+          {% if s.is_urgent %}<div style="font-size:9px;color:#dc2626;font-weight:600;">URGENT</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:32px;">
+  <div style="font-size:32px;margin-bottom:10px;color:#9ca3af;"><i class="ti ti-droplet-off"></i></div>
+  <div style="font-weight:600;margin-bottom:6px;">No {{ selected_type or '' }} blood currently listed</div>
+  <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Try a different blood type or submit an urgent request</div>
+  <a href="{{ url_for('blood.request_blood') }}" class="btn btn-primary">Request Blood</a>
+</div>
+{% endif %}
+
+<!-- Info panel -->
+<div class="card" style="margin-top:16px;">
+  <div class="card-header"><span class="card-title">About blood donation in Uganda</span></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;font-size:13px;">
+    <div style="padding:10px;background:var(--surface-2);border-radius:8px;">
+      <div style="font-size:18px;margin-bottom:6px;color:#dc2626;"><i class="ti ti-user-check"></i></div>
+      <div style="font-weight:600;margin-bottom:4px;">Who can donate</div>
+      <div style="color:var(--text-muted);">Age 16–65, weight ≥50kg, healthy, not donated in last 3 months</div>
+    </div>
+    <div style="padding:10px;background:var(--surface-2);border-radius:8px;">
+      <div style="font-size:18px;margin-bottom:6px;color:#dc2626;"><i class="ti ti-droplet-filled"></i></div>
+      <div style="font-weight:600;margin-bottom:4px;">O- is universal</div>
+      <div style="color:var(--text-muted);">O negative blood can be given to any patient in emergency</div>
+    </div>
+    <div style="padding:10px;background:var(--surface-2);border-radius:8px;">
+      <div style="font-size:18px;margin-bottom:6px;color:#dc2626;"><i class="ti ti-phone"></i></div>
+      <div style="font-weight:600;margin-bottom:4px;">UBTS Hotline</div>
+      <div style="color:var(--text-muted);">Uganda Blood Transfusion Service: <a href="tel:0800190190">0800 190 190</a> (free)</div>
+    </div>
+    <div style="padding:10px;background:var(--surface-2);border-radius:8px;">
+      <div style="font-size:18px;margin-bottom:6px;color:#dc2626;"><i class="ti ti-shield-check"></i></div>
+      <div style="font-weight:600;margin-bottom:4px;">Safe and fast</div>
+      <div style="color:var(--text-muted);">Takes 30 minutes. Sterile equipment. Your blood saves up to 3 lives.</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const map = L.map('blood-map').setView([1.3733, 32.2903], 7);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);
+
+fetch('/blood/api/availability{% if selected_type %}?type={{ selected_type }}{% endif %}')
+  .then(r=>r.json()).then(data=>{
+    data.forEach(f=>{
+      const col = f.urgent ? '#dc2626' : '#b91c1c';
+      const ico = L.divIcon({
+        html:`<div style="background:${col};color:#fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.3);border:2px solid #fff;">${f.blood_type}</div>`,
+        iconSize:[36,36],iconAnchor:[18,18],className:''
+      });
+      L.marker([f.lat,f.lon],{icon:ico}).addTo(map)
+        .bindPopup(`<strong>${f.facility}</strong><br>${f.address}<br><b>${f.blood_type}</b>· ${f.units} units${f.urgent?'<br><span style="color:#dc2626;font-weight:600;">CRITICAL LOW</span>':''}${f.phone?`<br>${f.phone}`:''}`);
+    });
+  }).catch(()=>{});
+</script>
+{% endblock %}{% endblock %}

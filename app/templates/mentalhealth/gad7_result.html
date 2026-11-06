@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}GAD-7 Result — MedLink{% endblock %}
+{% block public_content %}{% block content %}
+<div style="max-width:560px;margin:0 auto;">
+{% set color_map = {'minimal':'#dcfce7','mild':'#fef9c3','moderate':'#fed7aa','severe':'#fee2e2'} %}
+{% set text_map = {'minimal':'#166534','mild':'#854d0e','moderate':'#9a3412','severe':'#991b1b'} %}
+<div style="background:{{ color_map[severity] }};border-radius:16px;padding:28px;text-align:center;margin-bottom:20px;">
+  <div style="font-size:32px;margin-bottom:10px;"><i class="ti ti-report-medical"></i></div>
+  <div style="font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:{{ text_map[severity] }};font-weight:600;margin-bottom:6px;">GAD-7 Score: {{ score }} / 21</div>
+  <h2 style="font-size:20px;font-weight:700;color:{{ text_map[severity] }};margin-bottom:10px;">{{ severity.title() }} Anxiety</h2>
+  <p style="font-size:13px;color:{{ text_map[severity] }};max-width:400px;margin:0 auto;">{{ label }}</p>
+</div>
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+  <a href="{{ url_for('telemedicine.doctor_list', spec='Psychiatry & Mental Health') }}" class="btn btn-primary">Talk to a doctor →</a>
+  <a href="{{ url_for('mentalhealth.chat') }}" class="btn btn-secondary"><i class="ti ti-message-circle-2"></i>Anonymous chat</a>
+  <a href="{{ url_for('mentalhealth.gad7') }}" class="btn btn-secondary">Retake</a>
+</div>
+<div style="font-size:11px;color:var(--text-muted);text-align:center;">GAD-7 © Pfizer Inc. Not a diagnosis.</div>
+{% endblock %}{% endblock %}

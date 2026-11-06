@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Register as Blood Donor — MedLink{% endblock %}
+{% block content %}{% block public_content %}
+<div style="max-width:520px;margin:0 auto;">
+  <div style="text-align:center;margin-bottom:24px;">
+    <div style="font-size:36px;margin-bottom:10px;color:#dc2626;"><i class="ti ti-heart"></i></div>
+    <h1 style="font-size:22px;font-weight:700;margin-bottom:6px;">Register as a Blood Donor</h1>
+    <p style="font-size:13px;color:var(--text-muted);max-width:360px;margin:0 auto;">
+      Your blood can save up to 3 lives. We'll SMS you when your blood type is urgently needed nearby — for free.
+    </p>
+  </div>
+  <div class="card">
+    <form method="POST">
+      <div class="form-group">
+        <label>Full name *</label>
+        <input type="text" name="name" required placeholder="Your full name"
+               value="{{ current_user.name if current_user.is_authenticated else '' }}">
+      </div>
+      <div class="form-group">
+        <label>Phone number * <span style="font-size:11px;color:var(--text-muted);">We only use this to alert you when your blood is needed</span></label>
+        <input type="tel" name="phone" required placeholder="+256 7XX XXX XXX"
+               value="{{ current_user.phone if current_user.is_authenticated else '' }}">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Blood type *</label>
+          <select name="blood_type" required>
+            <option value="">— select —</option>
+            {% for bt in blood_types %}
+            <option value="{{ bt }}" {% if current_user.is_authenticated and current_user.blood_type == bt %}selected{% endif %}>{{ bt }}</option>
+            {% endfor %}
+          </select>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Not sure? Ask your doctor or visit a clinic for a free blood type test.</div>
+        </div>
+        <div class="form-group">
+          <label>Your district</label>
+          <select name="district_id">
+            <option value="">— select —</option>
+            {% for d in districts %}
+            <option value="{{ d.id }}">{{ d.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Preferred SMS language</label>
+        <select name="language">
+          <option value="English">English</option>
+          <option value="Luganda">Luganda</option>
+          <option value="Runyankole">Runyankole</option>
+        </select>
+      </div>
+      <div style="background:#fef2f2;border-radius:10px;padding:12px;font-size:12px;color:#991b1b;margin-bottom:16px;">
+         <strong>Requirements:</strong>Age 16–65 · Weight ≥50kg · Healthy · Not donated in last 3 months
+      </div>
+      <button type="submit" class="btn" style="width:100%;justify-content:center;background:#dc2626;color:#fff;border-color:#dc2626;font-weight:600;">
+         Register as Blood Donor
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}{% endblock %}

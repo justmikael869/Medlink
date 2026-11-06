@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Driver Dashboard — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Driver Dashboard</h1>
+    <p class="page-subtitle">{{ current_user.name }} · {{ 'Available' if current_user.is_available else 'Unavailable' }}</p>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    {% if current_user.has_cold_box %}
+    <span class="badge badge-confirmed">Cold Box</span>
+    {% endif %}
+    <span class="badge badge-{{ 'resolved' if current_user.verified_driver else 'unverified' }}">
+      {{ 'Verified' if current_user.verified_driver else 'Pending Verification' }}
+    </span>
+  </div>
+</div>
+
+{% if pending %}
+<div class="card" style="margin-bottom:16px;border-left:3px solid var(--warning);">
+  <div class="card-header"><span class="card-title">Available Orders ({{ pending|length }})</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Reference</th><th>Type</th><th>From</th><th>To</th><th>Cold Chain</th><th>Fee</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for o in pending %}
+        <tr>
+          <td><strong>{{ o.reference }}</strong></td>
+          <td>{{ o.delivery_type.replace('_',' ').title() }}</td>
+          <td style="font-size:12px;">{{ o.pharmacy.name if o.pharmacy else o.pickup_address or '—' }}</td>
+          <td style="font-size:12px;">{{ o.delivery_address or (o.destination.name if o.destination else '—') }}</td>
+          <td>{{ ' Yes' if o.requires_cold_chain else '—' }}</td>
+          <td>UGX {{ '{:,.0f}'.format(o.fee_ugx) }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('delivery.accept_delivery', order_id=o.id) }}">
+              <button type="submit" class="btn btn-success btn-sm">Accept</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header"><span class="card-title">My Orders</span></div>
+  {% if orders %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Reference</th><th>Type</th><th>Patient</th><th>Status</th><th>Fee</th><th>Update</th></tr></thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td><strong>{{ o.reference }}</strong></td>
+          <td>{{ o.delivery_type.replace('_',' ').title() }}</td>
+          <td>{{ o.patient.name if o.patient else '—' }}</td>
+          <td><span class="badge badge-{{ o.status }}">{{ o.status.replace('_',' ').title() }}</span></td>
+          <td>UGX {{ '{:,.0f}'.format(o.fee_ugx) }}</td>
+          <td>
+            {% if o.status not in ('delivered','cancelled') %}
+            <form method="POST" action="{{ url_for('delivery.update_delivery_status', order_id=o.id) }}" style="display:flex;gap:5px;">
+              <select name="status" style="font-size:12px;padding:4px;">
+                {% for s in ['assigned','picked_up','en_route','delivered'] %}
+                <option value="{{ s }}" {% if s == o.status %}selected{% endif %}>{{ s.replace('_',' ').title() }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="btn btn-primary btn-sm">Update</button>
+            </form>
+            {% else %}
+            <span style="color:#9ca3af;font-size:12px;">{{ o.status.title() }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="text-align:center;color:#9ca3af;padding:20px;">No orders assigned yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Order {{ order.order_number }} — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Order {{ order.order_number }}</h1>
+    <p class="page-subtitle"><span class="badge badge-{{ order.status }}">{{ order.status.title() }}</span></p>
+  </div>
+  <a href="{{ url_for('orders.index') }}" class="btn btn-secondary">← Back</a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Order Info</span></div>
+    <table style="width:100%;font-size:13px;">
+      <tr><td style="color:#6b7280;padding:4px 0;">Buyer</td><td><strong>{{ order.buyer.name }}</strong></td></tr>
+      <tr><td style="color:#6b7280;padding:4px 0;">Supplier</td><td>{{ order.external_supplier or (order.seller.name if order.seller else '—') }}</td></tr>
+      <tr><td style="color:#6b7280;padding:4px 0;">Total</td><td><strong>{{ '{:,.0f}'.format(order.total_amount) }} {{ order.currency }}</strong></td></tr>
+      <tr><td style="color:#6b7280;padding:4px 0;">Expected</td><td>{{ order.expected_delivery.strftime('%d %b %Y') if order.expected_delivery else '—' }}</td></tr>
+      <tr><td style="color:#6b7280;padding:4px 0;">Placed</td><td>{{ order.created_at.strftime('%d %b %Y %H:%M') }}</td></tr>
+      {% if order.notes %}<tr><td style="color:#6b7280;padding:4px 0;">Notes</td><td>{{ order.notes }}</td></tr>{% endif %}
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Update Status</span></div>
+    <form method="POST" action="{{ url_for('orders.update_status', order_id=order.id) }}">
+      <div class="form-group">
+        <label>New status</label>
+        <select name="status">
+          {% for s in ['pending','confirmed','processing','shipped','delivered','cancelled'] %}
+          <option value="{{ s }}" {% if order.status == s %}selected{% endif %}>{{ s.title() }}</option>
+          {% endfor %}
+        </select>
+        <p class="form-hint">Setting to "Delivered" automatically adds items to stock.</p>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Update</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title">Order Items</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Medicine</th><th>Quantity</th><th>Unit Price</th><th>Total</th></tr></thead>
+      <tbody>
+        {% for item in order.items %}
+        <tr>
+          <td><strong>{{ item.medicine.name }}</strong><br>
+            <small style="color:#9ca3af;">{{ item.medicine.dosage_form }} {{ item.medicine.strength }}</small></td>
+          <td>{{ item.quantity }} {{ item.medicine.unit }}</td>
+          <td>{{ '{:,.0f}'.format(item.unit_price) if item.unit_price else '—' }} {{ order.currency }}</td>
+          <td><strong>{{ '{:,.0f}'.format(item.total_price) }} {{ order.currency }}</strong></td>
+        </tr>
+        {% endfor %}
+        <tr style="background:#f9fafb;">
+          <td colspan="3" style="text-align:right;font-weight:600;">Total</td>
+          <td><strong>{{ '{:,.0f}'.format(order.total_amount) }} {{ order.currency }}</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

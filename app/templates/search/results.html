@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+{% block title %}
+  {% if query %}Results for "{{ query }}"{% else %}Search Results{% endif %} — MedLink
+{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+{% endblock %}
+
+{% block public_content %}{% block content %}
+<div style="max-width:860px;margin:0 auto;">
+
+  <!-- Search bar -->
+  <form method="GET" action="{{ url_for('search.by_' + search_type) }}"
+        style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+    <input name="q" value="{{ query or '' }}" placeholder="Search medicine or disease…"
+           style="flex:1;min-width:200px;">
+    <input name="lat" id="rlat" type="hidden" value="{{ lat or '' }}">
+    <input name="lon" id="rlon" type="hidden" value="{{ lon or '' }}">
+    <div style="display:flex;gap:6px;align-items:center;">
+      <select name="type" onchange="this.form.action='/search/'+this.value">
+        <option value="medicine" {% if search_type=='medicine' %}selected{% endif %}>Medicine</option>
+        <option value="disease" {% if search_type=='disease' %}selected{% endif %}>Disease</option>
+      </select>
+      <button type="submit" class="btn btn-primary">Search</button>
+      <a href="{{ url_for('search.index') }}" class="btn btn-secondary">← Back</a>
+    </div>
+  </form>
+
+  <!-- GPS status -->
+  {% if lat and lon %}
+  <div style="font-size:12px;color:#6b7280;margin-bottom:12px;">
+     Results sorted by distance from your location
+  </div>
+  {% else %}
+  <div style="font-size:12px;color:#9ca3af;margin-bottom:12px;">
+    Enable GPS for distance-sorted results.
+    <a href="#" onclick="getGPS();return false;" style="color:var(--primary);">Use my location</a>
+  </div>
+  {% endif %}
+
+  {% if query %}
+
+    {% if results %}
+
+      <!-- Map -->
+      <div id="map" style="height:320px;border-radius:12px;margin-bottom:20px;overflow:hidden;"></div>
+
+      <!-- Price comparison panel (medicine search only) -->
+      {% if search_type == 'medicine' and results|length >1 %}
+      {% set priced = results | selectattr('unit_price') | list %}
+      {% if priced|length >1 %}
+      {% set prices = priced | map(attribute='unit_price') | list %}
+      {% set min_price = prices | min %}
+      {% set max_price = prices | max %}
+      <div class="card" style="margin-bottom:16px;border-left:4px solid #7c3aed;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:#7c3aed;margin-bottom:2px;">
+               Price comparison — {{ query }}
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);">Across {{ priced|length }} pharmacies with listed prices</div>
+          </div>
+          <div style="display:flex;gap:16px;">
+            <div style="text-align:center;">
+              <div style="font-size:11px;color:var(--text-muted);">Lowest</div>
+              <div style="font-size:18px;font-weight:700;color:#16a34a;">UGX {{ '{:,.0f}'.format(min_price) }}</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-size:11px;color:var(--text-muted);">Highest</div>
+              <div style="font-size:18px;font-weight:700;color:#dc2626;">UGX {{ '{:,.0f}'.format(max_price) }}</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-size:11px;color:var(--text-muted);">You save</div>
+              <div style="font-size:18px;font-weight:700;color:#7c3aed;">UGX {{ '{:,.0f}'.format(max_price - min_price) }}</div>
+            </div>
+          </div>
+        </div>
+        <!-- Mini comparison bars -->
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          {% for r in priced | sort(attribute='unit_price') %}
+          {% set bar_pct = ((r.unit_price - min_price) / (max_price - min_price + 1) * 80 + 20) | round | int %}
+          {% set is_best = r.unit_price == min_price %}
+          <div style="display:flex;align-items:center;gap:10px;font-size:12px;">
+            <div style="min-width:160px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              {% if is_best %}<span style="color:#16a34a;font-weight:600;"></span>{% endif %}{{ r.facility.name }}
+            </div>
+            <div style="flex:1;background:var(--surface-1);border-radius:999px;height:8px;overflow:hidden;border:0.5px solid var(--border);">
+              <div style="width:{{ bar_pct }}%;height:100%;background:{% if is_best %}#16a34a{% elif r.unit_price == max_price %}#dc2626{% else %}#7c3aed{% endif %};border-radius:999px;"></div>
+            </div>
+            <div style="min-width:90px;text-align:right;font-weight:{% if is_best %}700{% else %}500{% endif %};color:{% if is_best %}#16a34a{% else %}var(--text-primary){% endif %};">
+              UGX {{ '{:,.0f}'.format(r.unit_price) }}
+              {% if r.distance_km is not none %}<span style="font-weight:400;color:var(--text-muted);">· {{ r.distance_km }}km</span>{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+      {% endif %}
+
+      <!-- Results count -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <p style="font-size:14px;font-weight:600;">
+          {{ results|length }} location{{ 's' if results|length != 1 }} found for
+          <em style="color:var(--primary);">{{ query }}</em>
+        </p>
+      </div>
+
+      <!-- Results list -->
+      {% set type_icons = {
+        'pharmacy':'','government_clinic':'','private_clinic':'',
+        'drug_shop':'','distributor':'','ngo_clinic':'','manufacturer':''
+      } %}
+
+      {% for r in results %}
+      <div class="card" style="display:flex;gap:16px;align-items:flex-start;margin-bottom:10px;">
+        <div style="flex:1;">
+          <div style="font-size:15px;font-weight:600;margin-bottom:4px;">
+            {{ type_icons.get(r.facility.facility_type, '') }} {{ r.facility.name }}
+          </div>
+          <span class="badge badge-{{ r.facility.facility_type }}">
+            {{ r.facility.facility_type.replace('_',' ').title() }}
+          </span>
+          <div style="font-size:12px;color:#6b7280;margin-top:6px;display:flex;gap:12px;flex-wrap:wrap;">
+            {% if r.facility.address %}<span>{{ r.facility.address }}</span>{% endif %}
+            {% if r.facility.phone %}<span>{{ r.facility.phone }}</span>{% endif %}
+            {% if r.facility.district %}<span>{{ r.facility.district.name }}</span>{% endif %}
+          </div>
+          <!-- Medicine chips -->
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+            {% if r.get('medicines_available') %}
+              {% for m in r.medicines_available %}
+              <span style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:3px 10px;font-size:12px;color:#166534;">
+                 {{ m.name }} · {{ m.quantity }} left
+                {% if m.price %} · UGX {{ '{:,.0f}'.format(m.price) }}{% endif %}
+                {% if m.get('cold_chain') %} {% endif %}
+              </span>
+              {% endfor %}
+            {% else %}
+              <span style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:3px 10px;font-size:12px;color:#166534;">
+                 {{ r.medicine.name if r.get('medicine') else '—' }}
+                · {{ r.quantity if r.get('quantity') else '' }} left
+                {% if r.get('unit_price') and r.unit_price >0 %} · UGX {{ '{:,.0f}'.format(r.unit_price) }}{% endif %}
+                {% if r.get('medicine') and r.medicine.requires_cold_chain %} {% endif %}
+              </span>
+            {% endif %}
+          </div>
+        </div>
+        <!-- Distance badge -->
+        {% if r.distance_km is not none %}
+        <div style="text-align:center;background:#eff6ff;border-radius:10px;padding:10px 14px;flex-shrink:0;">
+          <div style="font-size:20px;font-weight:700;color:#1d4ed8;">{{ r.distance_km }}</div>
+          <div style="font-size:11px;color:#6b7280;">km away</div>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+
+    {% else %}
+      <!-- No results -->
+      <div style="text-align:center;padding:50px 20px;">
+        <div style="font-size:38px;margin-bottom:12px;color:#9ca3af;"><i class="ti ti-search-off"></i></div>
+        <p style="font-size:16px;font-weight:600;margin-bottom:6px;">
+          No results for <em>{{ query }}</em>
+        </p>
+        <p style="font-size:13px;color:#6b7280;margin-bottom:20px;">
+          This search has been logged. A district officer will be notified about this shortage.
+        </p>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+          <a href="{{ url_for('search.index') }}" class="btn btn-primary">Try another search</a>
+          <a href="{{ url_for('telemedicine.triage') }}" class="btn btn-secondary">Speak to a doctor instead</a>
+        </div>
+      </div>
+    {% endif %}
+
+  {% else %}
+    <div style="text-align:center;padding:40px;color:#9ca3af;">
+      Enter a search term above to find medicines near you.
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+function getGPS() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos =>{
+    document.getElementById('rlat').value = pos.coords.latitude;
+    document.getElementById('rlon').value = pos.coords.longitude;
+    document.querySelector('form').submit();
+  });
+}
+
+{% if results and results|length >0 %}
+// Build map
+const map = L.map('map');
+    var satellite = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { attribution: 'Tiles © Esri · Maxar', maxZoom: 19 }
+    );
+    var labels = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+      { attribution: '© Esri', maxZoom: 19 }
+    );
+    var streets = L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { attribution: '© OpenStreetMap', maxZoom: 19 }
+    );
+    satellite.addTo(map);
+    labels.addTo(map);
+    L.control.layers({'Satellite': satellite,'Street Map': streets},{'Labels': labels},{position:'topright',collapsed:false}).addTo(map);
+
+const typeColors = {
+  pharmacy:'#22c55e', government_clinic:'#3b82f6', private_clinic:'#8b5cf6',
+  drug_shop:'#f97316', distributor:'#ec4899', manufacturer:'#6b7280'
+};
+const typeIcons = {
+  pharmacy:'', government_clinic:'', private_clinic:'',
+  drug_shop:'', distributor:'', ngo_clinic:'', manufacturer:''
+};
+
+const bounds = [];
+const facilities = [
+  {% for r in results %}
+  {% if r.facility.latitude and r.facility.longitude %}
+  {
+    lat: {{ r.facility.latitude }},
+    lon: {{ r.facility.longitude }},
+    name: {{ r.facility.name | tojson }},
+    type: {{ r.facility.facility_type | tojson }},
+    address: {{ (r.facility.address or '') | tojson }},
+    phone: {{ (r.facility.phone or '') | tojson }},
+    medicine: {{ ((r.medicine.name if r.get('medicine') else '') or '') | tojson }},
+    qty: {{ r.quantity if r.get('quantity') else 0 }},
+    price: {{ r.unit_price if r.get('unit_price') and r.unit_price else 0 }},
+    distance_km: {{ r.distance_km if r.distance_km is not none else 'null' }}
+  },
+  {% endif %}
+  {% endfor %}
+];
+
+// Find best price for star marker
+const pricedFacs = facilities.filter(f =>f.price && f.price >0);
+const bestPrice = pricedFacs.length ? Math.min(...pricedFacs.map(f =>f.price)) : null;
+
+facilities.forEach(f =>{
+  const col = typeColors[f.type] || '#0f4c81';
+  const ico = typeIcons[f.type] || '';
+  const isBest = bestPrice && f.price === bestPrice;
+  const size = isBest ? 42 : 34;
+  const bg = isBest ? '#16a34a' : col;
+  const badge = isBest ? `<div style="position:absolute;top:-6px;right:-6px;background:#fbbf24;color:#78350f;border-radius:999px;font-size:9px;font-weight:700;padding:1px 4px;line-height:1.4;">BEST</div>` : '';
+  const icon = L.divIcon({
+    html: `<div style="position:relative;background:${bg};color:#fff;border-radius:50%;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.35);border:2px solid #fff;">${ico}${badge}</div>`,
+    iconSize:[size,size], iconAnchor:[size/2,size/2], className:''
+  });
+  const priceStr = f.price ? `<br><strong>UGX ${f.price.toLocaleString()}</strong>` : '';
+  const distStr = f.distance_km ? `<br>${f.distance_km} km away` : '';
+  const bestStr = isBest ? `<br><span style="background:#dcfce7;color:#16a34a;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;">Best price</span>` : '';
+  const mk = L.marker([f.lat, f.lon], {icon}).addTo(map);
+  mk.bindPopup(
+    `<div style="min-width:180px;">
+      <strong style="font-size:13px;">${f.name}</strong>
+      <div style="font-size:11px;color:#6b7280;margin:2px 0;">${f.address || ''}</div>
+      ${f.phone ? `<div style="font-size:11px;">${f.phone}</div>` : ''}
+      <div style="margin-top:6px;font-size:12px;">
+         <strong>${f.medicine}</strong>· ${f.qty} in stock
+        ${priceStr}${distStr}${bestStr}
+      </div>
+    </div>`,
+    {maxWidth: 220}
+  );
+  bounds.push([f.lat, f.lon]);
+});
+
+{% if lat and lon %}
+L.circleMarker([{{ lat }}, {{ lon }}], {
+  radius:9, color:'#0f4c81', fillColor:'#3b82f6', fillOpacity:.85
+}).addTo(map).bindPopup(' Your location');
+bounds.push([{{ lat }}, {{ lon }}]);
+{% endif %}
+
+if (bounds.length) {
+  map.fitBounds(bounds, {padding:[40,40]});
+} else {
+  map.setView([1.3733, 32.2903], 7);
+}
+{% else %}
+document.getElementById('map').style.display = 'none';
+{% endif %}
+</script>
+{% endblock %}

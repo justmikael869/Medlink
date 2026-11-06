@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Request Blood — MedLink Uganda{% endblock %}
+{% block content %}{% block public_content %}
+<div style="max-width:560px;margin:0 auto;">
+  <div style="text-align:center;margin-bottom:24px;">
+    <div style="font-size:36px;margin-bottom:10px;color:#dc2626;"><i class="ti ti-droplet"></i></div>
+    <h1 style="font-size:22px;font-weight:700;margin-bottom:6px;">Urgent Blood Request</h1>
+    <p style="font-size:13px;color:var(--text-muted);">We will immediately SMS all registered donors of matching blood type in your area.</p>
+  </div>
+  <div class="card">
+    <form method="POST">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Blood type needed *</label>
+          <select name="blood_type" required>
+            <option value="">— select —</option>
+            {% for bt in blood_types %}
+            <option value="{{ bt }}">{{ bt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Units needed *</label>
+          <input type="number" name="units" min="1" max="20" value="1" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Urgency level *</label>
+        <select name="urgency" required>
+          <option value="emergency">Emergency — needed within hours</option>
+          <option value="urgent" selected>Urgent — needed today</option>
+          <option value="routine">Routine — within 24–48 hours</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Hospital / facility *</label>
+        <select name="facility_id" required>
+          <option value="">— select facility —</option>
+          {% for f in facilities %}
+          <option value="{{ f.id }}">{{ f.name }} — {{ f.district.name if f.district else '' }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Reason <span style="font-size:11px;color:var(--text-muted);">(optional — helps donors understand urgency)</span></label>
+        <input type="text" name="reason" placeholder="e.g. Post-partum haemorrhage, surgery, accident">
+      </div>
+      <div style="background:#fef2f2;border-radius:10px;padding:12px;font-size:12px;color:#991b1b;margin-bottom:16px;">
+         Submitting this request will SMS all registered donors of {{ 'matching' }} blood type in the area. Only submit genuine requests.
+      </div>
+      <button type="submit" class="btn" style="width:100%;justify-content:center;background:#dc2626;color:#fff;border-color:#dc2626;font-weight:600;">
+         Submit Urgent Request & Alert Donors
+      </button>
+    </form>
+  </div>
+  <div style="text-align:center;margin-top:14px;font-size:13px;color:var(--text-muted);">
+    UBTS Emergency: <a href="tel:0800190190" style="color:#dc2626;font-weight:600;">0800 190 190</a>(toll-free)
+  </div>
+</div>
+{% endblock %}{% endblock %}

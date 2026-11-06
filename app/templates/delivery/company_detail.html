@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ company.name }} — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ company.name }}</h1>
+    <p class="page-subtitle">
+      <span class="badge badge-{{ 'confirmed' if company.verified else 'pending' }}">
+        {{ ' Verified' if company.verified else '⏳ Pending Verification' }}
+      </span>
+    </p>
+  </div>
+  <a href="{{ url_for('delivery.company_list') }}" class="btn btn-secondary">← Companies</a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Company Info</span></div>
+    <table style="font-size:13px;">
+      <tr><td style="color:#6b7280;padding:5px 0;width:120px;">Name</td><td><strong>{{ company.name }}</strong></td></tr>
+      <tr><td style="color:#6b7280;padding:5px 0;">Phone</td><td>{{ company.contact_phone or '—' }}</td></tr>
+      <tr><td style="color:#6b7280;padding:5px 0;">Email</td><td>{{ company.contact_email or '—' }}</td></tr>
+      <tr><td style="color:#6b7280;padding:5px 0;">Status</td>
+          <td><span class="badge badge-{{ 'confirmed' if company.verified else 'pending' }}">{{ 'Verified' if company.verified else 'Pending' }}</span></td></tr>
+      <tr><td style="color:#6b7280;padding:5px 0;">Drivers</td><td><strong>{{ drivers|length }}</strong></td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Drivers</span></div>
+    {% if drivers %}
+    {% for d in drivers %}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:.5px solid var(--color-border-tertiary);font-size:13px;">
+      <span>{{ d.name }}</span>
+      <div style="display:flex;gap:6px;">
+        {% if d.has_cold_box %}<span class="badge badge-confirmed" style="font-size:10px;">Cold</span>{% endif %}
+        <span class="badge badge-{{ 'confirmed' if d.verified_driver else 'pending' }}">{{ 'Verified' if d.verified_driver else 'Pending' }}</span>
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p style="color:#9ca3af;font-size:13px;">No drivers yet. Share your company with drivers to join.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if orders %}
+<div class="card">
+  <div class="card-header"><span class="card-title">Recent Orders</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Reference</th><th>Type</th><th>Driver</th><th>Status</th><th>Fee (UGX)</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td><strong>{{ o.reference }}</strong></td>
+          <td>{{ o.delivery_type.replace('_',' ').title() }}</td>
+          <td>{{ o.driver.name if o.driver else '—' }}</td>
+          <td><span class="badge badge-{{ o.status }}">{{ o.status.replace('_',' ').title() }}</span></td>
+          <td>{{ '{:,.0f}'.format(o.fee_ugx) }}</td>
+          <td style="color:#9ca3af;font-size:12px;">{{ o.created_at.strftime('%d %b %Y') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

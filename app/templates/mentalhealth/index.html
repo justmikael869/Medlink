@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Mental Health Support — MedLink Uganda{% endblock %}
+{% block head %}
+<style>
+.mh-hero{background:linear-gradient(135deg,#312e81 0%,#6d28d9 50%,#db2777 100%);border-radius:16px;padding:40px 32px;color:#fff;text-align:center;margin-bottom:24px;}
+.mh-card{border-radius:14px;padding:24px;border:1px solid var(--border);background:var(--card);transition:box-shadow .2s;cursor:pointer;text-decoration:none;display:block;color:inherit;}
+.mh-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.1);transform:translateY(-2px);}
+.mh-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:14px;}
+.crisis-bar{background:#fee2e2;border:1px solid #fca5a5;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+</style>
+{% endblock %}
+{% block public_content %}{% block content %}
+
+<div class="mh-hero">
+  <div style="font-size:32px;margin-bottom:12px;"><i class="ti ti-heart-handshake"></i></div>
+  <h1 style="font-size:24px;font-weight:700;margin-bottom:8px;">Mental Health Support</h1>
+  <p style="font-size:14px;opacity:.85;max-width:480px;margin:0 auto 16px;">
+    A safe, anonymous space. Your feelings matter. 
+    Uganda has fewer than 100 psychiatrists — but you don't have to face this alone.
+  </p>
+  <div style="display:inline-flex;gap:8px;background:rgba(255,255,255,.12);border-radius:999px;padding:6px 16px;font-size:12px;align-items:center;">
+     Completely anonymous · No name required · Free
+  </div>
+</div>
+
+<!-- Crisis bar - always visible -->
+<div class="crisis-bar">
+  <div>
+    <div style="font-weight:600;font-size:14px;color:#991b1b;">In crisis right now?</div>
+    <div style="font-size:13px;color:#7f1d1d;">You are not alone. Help is available right now.</div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="tel:0800212121" class="btn btn-sm" style="background:#dc2626;color:#fff;border-color:#dc2626;"><i class="ti ti-phone"></i>Befrienders Uganda: 0800 212 121</a>
+    <a href="tel:999" class="btn btn-sm" style="background:#991b1b;color:#fff;border-color:#991b1b;"><i class="ti ti-ambulance"></i>Emergency: 999</a>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:24px;">
+
+  <a href="{{ url_for('mentalhealth.chat') }}" class="mh-card">
+    <div class="mh-icon" style="background:#ede9fe;color:#7c3aed;"><i class="ti ti-message-circle-2"></i></div>
+    <div style="font-size:16px;font-weight:600;margin-bottom:6px;">Talk to someone</div>
+    <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">
+      Anonymous, supportive chat. Share what's on your mind — no judgement, no names.
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:#7c3aed;font-weight:500;">Start chatting →</div>
+  </a>
+
+  <a href="{{ url_for('mentalhealth.phq9') }}" class="mh-card">
+    <div class="mh-icon" style="background:#dbeafe;color:#1d4ed8;"><i class="ti ti-clipboard-heart"></i></div>
+    <div style="font-size:16px;font-weight:600;margin-bottom:6px;">Depression screen (PHQ-9)</div>
+    <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">
+      9 questions. Takes 2 minutes. The internationally validated tool for identifying depression — used by doctors worldwide.
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:#1d4ed8;font-weight:500;">Take the screen →</div>
+  </a>
+
+  <a href="{{ url_for('mentalhealth.gad7') }}" class="mh-card">
+    <div class="mh-icon" style="background:#dcfce7;color:#16a34a;"><i class="ti ti-mood-confuzed"></i></div>
+    <div style="font-size:16px;font-weight:600;margin-bottom:6px;">Anxiety screen (GAD-7)</div>
+    <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">
+      7 questions about worry, restlessness, and anxiety. Helps identify whether you need professional support.
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:#16a34a;font-weight:500;">Take the screen →</div>
+  </a>
+
+</div>
+
+<!-- What we offer -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><span class="card-title">What MedLink Mental Health offers</span></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;font-size:13px;">
+    <div style="padding:12px;background:var(--surface-2);border-radius:10px;">
+      <div style="font-size:20px;margin-bottom:6px;color:var(--primary);"><i class="ti ti-lock"></i></div>
+      <div style="font-weight:600;margin-bottom:4px;">Complete anonymity</div>
+      <div style="color:var(--text-muted);">No name, no login required. Your session is private and never linked to your identity unless you choose.</div>
+    </div>
+    <div style="padding:12px;background:var(--surface-2);border-radius:10px;">
+      <div style="font-size:20px;margin-bottom:6px;color:var(--primary);"><i class="ti ti-map-pin"></i></div>
+      <div style="font-weight:600;margin-bottom:4px;">Available in Uganda</div>
+      <div style="color:var(--text-muted);">Context-aware support that understands Ugandan culture, family pressures, and local mental health challenges.</div>
+    </div>
+    <div style="padding:12px;background:var(--surface-2);border-radius:10px;">
+      <div style="font-size:20px;margin-bottom:6px;color:var(--primary);"><i class="ti ti-route"></i></div>
+      <div style="font-weight:600;margin-bottom:4px;">Pathway to care</div>
+      <div style="color:var(--text-muted);">If your screening shows you need professional help, we connect you directly to mental health doctors on MedLink.</div>
+    </div>
+    <div style="padding:12px;background:var(--surface-2);border-radius:10px;">
+      <div style="font-size:20px;margin-bottom:6px;color:var(--primary);"><i class="ti ti-heart"></i></div>
+      <div style="font-weight:600;margin-bottom:4px;">No stigma</div>
+      <div style="color:var(--text-muted);">You are not "mad." Mental health is health. Millions of Ugandans face depression and anxiety — you are not alone.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Uganda resources -->
+<div class="card">
+  <div class="card-header"><span class="card-title">Uganda mental health resources</span></div>
+  <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:10px;background:var(--surface-2);border-radius:8px;">
+      <div><strong>Befrienders Uganda</strong>— crisis listening service<br><span style="color:var(--text-muted);">Toll-free, confidential, 24/7</span></div>
+      <a href="tel:0800212121" class="btn btn-sm btn-secondary"><i class="ti ti-phone"></i>0800 212 121</a>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:10px;background:var(--surface-2);border-radius:8px;">
+      <div><strong>Butabika National Referral Hospital</strong>— psychiatric care<br><span style="color:var(--text-muted);">Kampala · In-patient and outpatient services</span></div>
+      <a href="tel:+256414566596" class="btn btn-sm btn-secondary"><i class="ti ti-phone"></i>0414 566 596</a>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:10px;background:var(--surface-2);border-radius:8px;">
+      <div><strong>Mental Health Uganda</strong>— community support<br><span style="color:var(--text-muted);">Peer support groups and advocacy</span></div>
+      <a href="https://mentalhealthuganda.org" target="_blank" class="btn btn-sm btn-secondary"><i class="ti ti-external-link"></i>Visit website</a>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:10px;background:var(--surface-2);border-radius:8px;">
+      <div><strong>Find a psychiatrist on MedLink</strong><br><span style="color:var(--text-muted);">Book an appointment with a mental health doctor</span></div>
+      <a href="{{ url_for('telemedicine.doctor_list', spec='Psychiatry & Mental Health') }}" class="btn btn-sm btn-primary">Book →</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}{% endblock %}

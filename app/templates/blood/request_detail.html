@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Blood Request — MedLink{% endblock %}
+{% block content %}{% block public_content %}
+<div style="max-width:600px;margin:0 auto;">
+  {% set urgency_color = {'emergency':'#dc2626','urgent':'#f97316','routine':'#3b82f6'} %}
+  {% set urgency_icon = {'emergency':'','urgent':'','routine':''} %}
+
+  <div style="background:{{ urgency_color.get(req.urgency,'#dc2626') }};border-radius:14px;padding:24px;color:#fff;margin-bottom:20px;text-align:center;">
+    <div style="font-size:36px;margin-bottom:8px;">{{ urgency_icon.get(req.urgency,'') }}</div>
+    <div style="font-size:24px;font-weight:800;margin-bottom:4px;">{{ req.blood_type }}</div>
+    <div style="font-size:14px;opacity:.9;">{{ req.units_needed }} unit(s) needed · {{ req.urgency.upper() }}</div>
+    {% if req.facility %}<div style="font-size:13px;opacity:.8;margin-top:4px;">{{ req.facility.name }}</div>{% endif %}
+    {% if req.reason %}<div style="font-size:12px;opacity:.75;margin-top:4px;font-style:italic;">{{ req.reason }}</div>{% endif %}
+    <div style="margin-top:12px;font-size:12px;opacity:.7;">{{ req.sms_sent_count }} donor(s) notified by SMS</div>
+  </div>
+
+  {% if available %}
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header"><span class="card-title">Compatible blood available nearby</span></div>
+    {% for s in available %}
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;{% if not loop.last %}border-bottom:0.5px solid var(--border);{% endif %}">
+      <div>
+        <div style="font-size:14px;font-weight:600;">{{ s.facility.name }}</div>
+        <div style="font-size:12px;color:var(--text-muted);">{{ s.facility.address or '' }}</div>
+        {% if s.facility.phone %}<a href="tel:{{ s.facility.phone }}" style="font-size:12px;color:var(--primary);">{{ s.facility.phone }}</a>{% endif %}
+      </div>
+      <div style="text-align:center;background:#fef2f2;border-radius:8px;padding:8px 12px;">
+        <div style="font-size:14px;font-weight:700;color:#dc2626;">{{ s.blood_type }}</div>
+        <div style="font-size:12px;font-weight:600;">{{ s.units_available }} units</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="{{ url_for('blood.index') }}" class="btn btn-secondary">← Back to map</a>
+    <a href="{{ url_for('blood.request_blood') }}" class="btn btn-secondary">Submit another request</a>
+    <a href="{{ url_for('blood.register_donor') }}" class="btn btn-primary">Register as donor</a>
+  </div>
+</div>
+{% endblock %}{% endblock %}

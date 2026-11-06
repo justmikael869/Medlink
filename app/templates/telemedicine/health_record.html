@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}My Health Record — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">My Health Record</h1>
+    <p class="page-subtitle">Your personal medical profile — shared with your doctor during consultations</p>
+  </div>
+</div>
+
+<div class="grid-2" style="gap:20px;align-items:flex-start;">
+
+  <!-- Left: editable profile form -->
+  <div>
+    <form method="POST">
+      <!-- Personal -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><span class="card-title"><i class="ti ti-user-circle" style="margin-right:6px;color:var(--primary);"></i>Personal information</span></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Phone number</label>
+            <input type="tel" name="phone" value="{{ current_user.phone or '' }}" placeholder="+256 7XX XXX XXX">
+          </div>
+          <div class="form-group">
+            <label>Gender</label>
+            <select name="gender">
+              <option value="">— select —</option>
+              <option value="male" {% if current_user.gender=='male' %}selected{% endif %}>Male</option>
+              <option value="female" {% if current_user.gender=='female' %}selected{% endif %}>Female</option>
+              <option value="other" {% if current_user.gender=='other' %}selected{% endif %}>Other / prefer not to say</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Medical -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><span class="card-title"><i class="ti ti-heart-rate-monitor" style="margin-right:6px;color:#ef4444;"></i>Medical information</span></div>
+        <div class="form-group">
+          <label>Blood type</label>
+          <select name="blood_type">
+            <option value="">— unknown —</option>
+            {% for bt in ['A+','A-','B+','B-','AB+','AB-','O+','O-'] %}
+            <option value="{{ bt }}" {% if current_user.blood_type == bt %}selected{% endif %}>{{ bt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Known allergies <span style="font-size:11px;color:var(--text-muted);">e.g. penicillin, sulphur drugs, peanuts</span></label>
+          <textarea name="known_allergies" rows="2" placeholder="List any known allergies…">{{ current_user.known_allergies or '' }}</textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Chronic conditions <span style="font-size:11px;color:var(--text-muted);">e.g. diabetes, hypertension, asthma, sickle cell</span></label>
+          <textarea name="chronic_conditions" rows="2" placeholder="List any long-term conditions…">{{ current_user.chronic_conditions or '' }}</textarea>
+        </div>
+      </div>
+
+      <!-- Insurance -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><span class="card-title"><i class="ti ti-shield" style="margin-right:6px;color:#7c3aed;"></i>Insurance</span></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Insurance provider</label>
+            <input type="text" name="insurance_provider" value="{{ current_user.insurance_provider or '' }}" placeholder="e.g. UAP, Jubilee, NHIF">
+          </div>
+          <div class="form-group">
+            <label>Insurance / member number</label>
+            <input type="text" name="insurance_number" value="{{ current_user.insurance_number or '' }}" placeholder="Your membership number">
+          </div>
+        </div>
+      </div>
+
+      <!-- Emergency contact -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><span class="card-title"><i class="ti ti-phone-call" style="margin-right:6px;color:#f97316;"></i>Emergency contact</span></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Full name</label>
+            <input type="text" name="emergency_contact_name" value="{{ current_user.emergency_contact_name or '' }}" placeholder="Next of kin name">
+          </div>
+          <div class="form-group">
+            <label>Phone number</label>
+            <input type="tel" name="emergency_contact_phone" value="{{ current_user.emergency_contact_phone or '' }}" placeholder="+256 7XX XXX XXX">
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary"><i class="ti ti-device-floppy"></i>Save health record</button>
+    </form>
+  </div>
+
+  <!-- Right: summary panels -->
+  <div>
+
+    <!-- Health card summary -->
+    <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#0f4c81 0%,#1d9e75 100%);color:#fff;border:none;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+        <div>
+          <div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">MedLink Health Card</div>
+          <div style="font-size:18px;font-weight:700;">{{ current_user.name }}</div>
+        </div>
+        <div style="font-size:28px;opacity:.3;"><i class="ti ti-heart-rate-monitor"></i></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
+        <div>
+          <div style="opacity:.7;font-size:11px;">Blood type</div>
+          <div style="font-weight:600;font-size:16px;">{{ current_user.blood_type or '—' }}</div>
+        </div>
+        <div>
+          <div style="opacity:.7;font-size:11px;">Allergies</div>
+          <div style="font-weight:500;">{{ (current_user.known_allergies or 'None recorded')[:30] }}</div>
+        </div>
+        <div>
+          <div style="opacity:.7;font-size:11px;">Conditions</div>
+          <div style="font-weight:500;">{{ (current_user.chronic_conditions or 'None recorded')[:30] }}</div>
+        </div>
+        <div>
+          <div style="opacity:.7;font-size:11px;">Emergency contact</div>
+          <div style="font-weight:500;">{{ current_user.emergency_contact_name or '—' }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent appointments -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header"><span class="card-title">Recent appointments</span></div>
+      {% if recent_appts %}
+        {% for a in recent_appts %}
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;{% if not loop.last %}border-bottom:0.5px solid var(--border);{% endif %}">
+          <div>
+            <div style="font-size:13px;font-weight:500;">{{ a.reference }}</div>
+            <div style="font-size:12px;color:var(--text-muted);">
+              {{ ('Dr ' + a.doctor.name) if a.doctor else 'No doctor assigned' }}
+              · {{ a.slot_time.strftime('%d %b %Y') if a.slot_time else a.created_at.strftime('%d %b %Y') }}
+            </div>
+          </div>
+          <span class="badge badge-{{ a.status }}" style="font-size:11px;">{{ a.status.replace('_',' ').title() }}</span>
+        </div>
+        {% endfor %}
+      {% else %}
+      <p style="font-size:13px;color:var(--text-muted);margin:0;">No appointments yet.</p>
+      {% endif %}
+    </div>
+
+    <!-- Recent prescriptions -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Recent prescriptions</span></div>
+      {% if all_rx %}
+        {% for item in all_rx %}
+        <div style="padding:8px 0;{% if not loop.last %}border-bottom:0.5px solid var(--border);{% endif %}">
+          <div style="font-size:13px;font-weight:500;">{{ item.rx.medicine_name }}</div>
+          <div style="font-size:12px;color:var(--text-muted);">
+            {{ item.rx.dosage }} · {{ item.rx.frequency }}
+            {% if item.rx.duration_days %} · {{ item.rx.duration_days }} days{% endif %}
+            · <span style="color:{% if item.rx.dispensed %}#16a34a{% else %}#6b7280{% endif %};">
+              {{ 'Dispensed' if item.rx.dispensed else 'Not yet dispensed' }}
+            </span>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+      <p style="font-size:13px;color:var(--text-muted);margin:0;">No prescriptions yet.</p>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

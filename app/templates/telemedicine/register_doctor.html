@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Register as Doctor — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:600px;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Register as a Doctor</h1>
+      <p class="page-subtitle">Your UMDPC licence will be verified by our admin team before activation</p>
+    </div>
+  </div>
+  <div class="card">
+    <form method="POST">
+      <div class="form-row">
+        <div class="form-group">
+          <label>UMDPC Licence Number *</label>
+          <input name="umdpc_number" required placeholder="e.g. UMDPC/2021/12345"
+                 value="{{ current_user.umdpc_number or '' }}">
+          <div class="form-hint">Uganda Medical & Dental Practitioners Council registration number</div>
+        </div>
+        <div class="form-group">
+          <label>Specialisation *</label>
+          <select name="specialisation" required>
+            <option value="">— Select —</option>
+            {% for s in specialisations %}
+            <option value="{{ s }}" {% if current_user.specialisation == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Consultation Fee (UGX)</label>
+          <input name="fee" type="number" min="0" step="500"
+                 placeholder="e.g. 30000" value="{{ current_user.consultation_fee_ugx or '' }}">
+        </div>
+        <div class="form-group">
+          <label>Languages spoken</label>
+          <input name="languages" placeholder="e.g. English, Luganda, Swahili"
+                 value="{{ current_user.languages or '' }}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Districts you serve (select all that apply)</label>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:200px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px;padding:10px;">
+          {% for d in districts %}
+          <label class="checkbox-label" style="font-weight:400;font-size:12px;">
+            <input type="checkbox" name="district_ids" value="{{ d.id }}">{{ d.name }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Short bio (shown to patients)</label>
+        <textarea name="bio" rows="3" placeholder="Your experience, approach, and what patients can expect...">{{ current_user.bio or '' }}</textarea>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Submit for Verification</button>
+        <a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

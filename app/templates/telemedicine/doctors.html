@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% block title %}Find a Doctor — MedLink{% endblock %}
+{% block public_content %}{% block content %}
+<div style="max-width:960px;margin:0 auto;">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Find a Doctor</h1>
+      <p class="page-subtitle">UMDPC-verified doctors available for remote and in-person consultations</p>
+    </div>
+    <a href="{{ url_for('telemedicine.triage') }}" class="btn btn-secondary">
+      <i class="ti ti-stethoscope"></i>Symptom Check First
+    </a>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="card" style="margin-bottom:1.5rem;">
+    <div class="card-body" style="padding:1.25rem;">
+      <div style="display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px;">
+          <label class="form-label" style="font-size:0.8rem;margin-bottom:0.3rem;">Name or Keyword</label>
+          <input type="text" id="search-name" class="form-control" placeholder="Search by name..." oninput="filterDoctors()">
+        </div>
+        <div style="flex:1;min-width:180px;">
+          <label class="form-label" style="font-size:0.8rem;margin-bottom:0.3rem;">Specialisation</label>
+          <select id="filter-spec" class="form-control" onchange="filterDoctors()">
+            <option value="">All specialisations</option>
+            {% for s in specialisations %}
+            <option value="{{ s }}" {% if s == selected_spec %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="flex:1;min-width:160px;">
+          <label class="form-label" style="font-size:0.8rem;margin-bottom:0.3rem;">Max Fee (UGX)</label>
+          <select id="filter-fee" class="form-control" onchange="filterDoctors()">
+            <option value="">Any fee</option>
+            <option value="20000">Under 20,000</option>
+            <option value="30000">Under 30,000</option>
+            <option value="50000">Under 50,000</option>
+            <option value="100000">Under 100,000</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:160px;">
+          <label class="form-label" style="font-size:0.8rem;margin-bottom:0.3rem;">Consultation Type</label>
+          <select id="filter-type" class="form-control" onchange="filterDoctors()">
+            <option value="">Any type</option>
+            <option value="remote">Remote / Online</option>
+            <option value="in_person">In-Person</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn-outline btn-sm" onclick="clearFilters()" style="white-space:nowrap;align-self:flex-end;">
+          <i class="ti ti-x"></i>Clear
+        </button>
+      </div>
+
+      <!-- Specialisation quick-filter pills -->
+      <div style="margin-top:1rem;display:flex;gap:0.4rem;flex-wrap:wrap;">
+        <span style="font-size:0.75rem;color:var(--text-muted);align-self:center;margin-right:0.25rem;">Quick filter:</span>
+        {% set popular = ['General Practice', 'Paediatrics', 'Obstetrics & Gynaecology', 'Dermatology', 'Cardiology', 'Psychiatry & Mental Health', 'Internal Medicine', 'Orthopaedics'] %}
+        {% for s in popular %}
+        <button type="button"
+                class="spec-pill"
+                data-spec="{{ s }}"
+                onclick="setSpec('{{ s }}')"
+                style="
+                  padding:0.3rem 0.75rem;
+                  border-radius:20px;
+                  border:1px solid var(--border);
+                  background:var(--surface);
+                  font-size:0.78rem;
+                  cursor:pointer;
+                  transition:all 0.15s;
+                  color:var(--text-primary);
+                  white-space:nowrap;
+                ">
+          {{ s }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Results count -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+    <p style="font-size:0.875rem;color:var(--text-muted);">
+      Showing <strong id="results-count">{{ doctors|length }}</strong>doctor(s)
+    </p>
+  </div>
+
+  <!-- Doctor cards grid -->
+  <div id="doctors-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem;">
+    {% for doc in doctors %}
+    <div class="card doctor-card"
+         data-name="{{ doc.name.lower() }}"
+         data-spec="{{ doc.specialisation or 'General Practice' }}"
+         data-fee="{{ doc.consultation_fee_ugx or 0 }}"
+         data-type="remote"
+         style="display:flex;flex-direction:column;">
+
+      <div class="card-body" style="display:flex;flex-direction:column;gap:0.85rem;flex:1;">
+        <!-- Header row -->
+        <div style="display:flex;align-items:flex-start;gap:0.85rem;">
+          <div style="
+            width:52px;height:52px;flex-shrink:0;
+            border-radius:50%;
+            background:linear-gradient(135deg, var(--primary-light), var(--primary));
+            display:flex;align-items:center;justify-content:center;
+            color:var(--primary);
+            font-weight:700;font-size:1.1rem;
+          ">
+            {{ doc.name[0].upper() }}{{ doc.name.split()[-1][0].upper() if doc.name.split()|length >1 else '' }}
+          </div>
+          <div style="flex:1;min-width:0;">
+            <p style="font-weight:700;font-size:0.95rem;margin:0 0 0.15rem;color:var(--text-primary);">
+              Dr {{ doc.name }}
+            </p>
+            <p style="font-size:0.8rem;color:var(--primary);font-weight:500;margin:0;">
+              {{ doc.specialisation or 'General Practice' }}
+            </p>
+            {% if doc.district %}
+            <p style="font-size:0.75rem;color:var(--text-muted);margin:0.15rem 0 0;">
+              <i class="ti ti-map-pin" style="font-size:0.7rem;"></i>{{ doc.district.name }}
+            </p>
+            {% endif %}
+          </div>
+          <span style="
+            background:#e8f5e9;color:#2e7d32;
+            border-radius:20px;padding:0.2rem 0.5rem;
+            font-size:0.68rem;font-weight:600;
+            white-space:nowrap;flex-shrink:0;
+          ">
+            <i class="ti ti-circle-check" style="font-size:0.7rem;"></i>UMDPC
+          </span>
+        </div>
+
+        {% if doc.bio %}
+        <p style="font-size:0.8rem;color:var(--text-muted);line-height:1.5;margin:0;">
+          {{ doc.bio[:110] }}{% if doc.bio|length >110 %}…{% endif %}
+        </p>
+        {% endif %}
+
+        <!-- Stats row -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+          <div style="background:var(--surface);border-radius:8px;padding:0.6rem 0.75rem;text-align:center;">
+            <p style="font-size:0.68rem;color:var(--text-muted);margin:0 0 0.15rem;text-transform:uppercase;letter-spacing:0.05em;">Consult Fee</p>
+            <p style="font-weight:700;font-size:0.9rem;color:var(--text-primary);margin:0;">
+              UGX {{ '{:,.0f}'.format(doc.consultation_fee_ugx or 0) }}
+            </p>
+          </div>
+          <div style="background:var(--surface);border-radius:8px;padding:0.6rem 0.75rem;text-align:center;">
+            <p style="font-size:0.68rem;color:var(--text-muted);margin:0 0 0.15rem;text-transform:uppercase;letter-spacing:0.05em;">Available</p>
+            <p style="font-weight:600;font-size:0.85rem;color:var(--success);margin:0;">
+              <i class="ti ti-circle-filled" style="font-size:0.6rem;"></i>Online
+            </p>
+          </div>
+        </div>
+
+        <!-- Languages -->
+        {% if doc.languages %}
+        <p style="font-size:0.75rem;color:var(--text-muted);margin:0;">
+          <i class="ti ti-language" style="font-size:0.8rem;"></i>{{ doc.languages }}
+        </p>
+        {% endif %}
+
+        <!-- Action buttons -->
+        <div style="display:flex;gap:0.5rem;margin-top:auto;">
+          {% if current_user.is_authenticated %}
+          <a href="{{ url_for('telemedicine.book', doctor_id=doc.id) }}"
+             class="btn btn-primary btn-sm" style="flex:1;justify-content:center;">
+            <i class="ti ti-calendar-plus"></i>Book
+          </a>
+          <a href="{{ url_for('messaging.compose', recipient_id=doc.id) }}"
+             class="btn btn-outline btn-sm" title="Send message">
+            <i class="ti ti-message"></i>
+          </a>
+          {% else %}
+          <a href="{{ url_for('auth.login') }}"
+             class="btn btn-primary btn-sm" style="flex:1;justify-content:center;">
+            <i class="ti ti-login"></i>Login to Book
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- No results state -->
+  <div id="no-results" style="display:none;text-align:center;padding:3rem;">
+    <i class="ti ti-user-search" style="font-size:3rem;color:var(--text-muted);display:block;margin-bottom:1rem;"></i>
+    <h3 style="color:var(--text-primary);margin-bottom:0.5rem;">No doctors found</h3>
+    <p style="color:var(--text-muted);margin-bottom:1.25rem;">Try a different specialisation or clear the filters.</p>
+    <button onclick="clearFilters()" class="btn btn-outline">
+      <i class="ti ti-x"></i>Clear All Filters
+    </button>
+  </div>
+
+  <div style="margin-top:2rem;text-align:center;">
+    <p style="font-size:0.85rem;color:var(--text-muted);">
+      Are you a healthcare professional?
+      <a href="{{ url_for('auth.register_doctor') }}" style="color:var(--primary);font-weight:500;">Register on MedLink</a>
+    </p>
+  </div>
+</div>
+
+<script>
+var allCards = Array.from(document.querySelectorAll('.doctor-card'));
+
+function filterDoctors() {
+  var nameQ = document.getElementById('search-name').value.toLowerCase().trim();
+  var specQ = document.getElementById('filter-spec').value;
+  var feeQ = parseInt(document.getElementById('filter-fee').value) || 0;
+  var typeQ = document.getElementById('filter-type').value;
+
+  var visible = 0;
+  allCards.forEach(function(card) {
+    var name = card.dataset.name;
+    var spec = card.dataset.spec;
+    var fee = parseFloat(card.dataset.fee) || 0;
+    var type = card.dataset.type;
+
+    var show = true;
+    if (nameQ && name.indexOf(nameQ) === -1 && spec.toLowerCase().indexOf(nameQ) === -1) show = false;
+    if (specQ && spec !== specQ) show = false;
+    if (feeQ && fee >feeQ) show = false;
+    if (typeQ && type !== typeQ) show = false;
+
+    card.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+
+  document.getElementById('results-count').textContent = visible;
+  document.getElementById('no-results').style.display = visible === 0 ? 'block' : 'none';
+
+  // Highlight active pill
+  document.querySelectorAll('.spec-pill').forEach(function(pill) {
+    var active = pill.dataset.spec === specQ;
+    pill.style.background = active ? 'var(--primary)' : 'var(--surface)';
+    pill.style.color = active ? '#fff' : 'var(--text-primary)';
+    pill.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+    pill.style.fontWeight = active ? '600' : '400';
+  });
+}
+
+function setSpec(spec) {
+  var sel = document.getElementById('filter-spec');
+  // Toggle off if already selected
+  sel.value = (sel.value === spec) ? '' : spec;
+  filterDoctors();
+}
+
+function clearFilters() {
+  document.getElementById('search-name').value = '';
+  document.getElementById('filter-spec').value = '';
+  document.getElementById('filter-fee').value = '';
+  document.getElementById('filter-type').value = '';
+  filterDoctors();
+}
+
+// Run on load in case URL had a spec pre-selected
+filterDoctors();
+</script>
+{% endblock %}{% endblock %}

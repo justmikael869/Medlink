@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Payment {{ pay.reference }} — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:620px;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Payment {{ pay.reference }}</h1>
+      <p class="page-subtitle"><span class="badge badge-{{ pay.status }}">{{ pay.status.title() }}</span></p>
+    </div>
+    <a href="{{ url_for('payments.index') }}" class="btn btn-secondary">← Back</a>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Transaction Details</span></div>
+    <table style="font-size:13px;">
+      <tr><td style="color:#6b7280;padding:6px 0;width:160px;">Reference</td><td><strong>{{ pay.reference }}</strong></td></tr>
+      <tr><td style="color:#6b7280;padding:6px 0;">Type</td><td>{{ (pay.payment_type or '').replace('_',' ').title() }}</td></tr>
+      <tr><td style="color:#6b7280;padding:6px 0;">Payer</td><td>{{ pay.payer.name if pay.payer else '—' }}</td></tr>
+      <tr><td style="color:#6b7280;padding:6px 0;">Payee</td><td>{{ pay.payee.name if pay.payee else '—' }}</td></tr>
+      <tr><td style="color:#6b7280;padding:6px 0;">Amount</td><td><strong>UGX {{ '{:,.0f}'.format(pay.amount_ugx) }}</strong></td></tr>
+      <tr><td style="color:#6b7280;padding:6px 0;">Platform fee (10%)</td><td>UGX {{ '{:,.0f}'.format(pay.platform_fee_ugx) }}</td></tr>
+      <tr><td style="color:#6b7280;padding:6px 0;">Net to payee</td><td style="font-weight:600;color:#166534;">UGX {{ '{:,.0f}'.format(pay.net_amount_ugx) }}</td></tr>
+      <tr><td style="color:#6b7280;padding:6px 0;">Status</td><td><span class="badge badge-{{ pay.status }}">{{ pay.status.title() }}</span></td></tr>
+      {% if pay.escrow_released_at %}<tr><td style="color:#6b7280;padding:6px 0;">Released at</td><td>{{ pay.escrow_released_at.strftime('%d %b %Y %H:%M') }}</td></tr>{% endif %}
+      <tr><td style="color:#6b7280;padding:6px 0;">Created</td><td>{{ pay.created_at.strftime('%d %b %Y %H:%M') }}</td></tr>
+    </table>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <div class="card-header"><span class="card-title">Audit Trail</span></div>
+    {% if pay.audit_trail %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Event</th><th>From</th><th>To</th><th>Actor</th><th>Note</th><th>When</th></tr></thead>
+        <tbody>
+          {% for a in pay.audit_trail %}
+          <tr>
+            <td><strong>{{ a.event }}</strong></td>
+            <td style="color:#9ca3af;">{{ a.old_status or '—' }}</td>
+            <td>{{ a.new_status or '—' }}</td>
+            <td style="font-size:12px;">{{ a.actor.name if a.actor else 'System' }}</td>
+            <td style="font-size:12px;color:#6b7280;">{{ a.note or '—' }}</td>
+            <td style="font-size:12px;color:#9ca3af;">{{ a.created_at.strftime('%d %b %H:%M') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:#9ca3af;padding:10px;">No audit events yet.</p>
+    {% endif %}
+  </div>
+
+  {% if current_user.role == 'system_admin' and pay.status == 'held' %}
+  <div style="margin-top:16px;">
+    <form method="POST" action="{{ url_for('payments.manual_release', pay_id=pay.id) }}"
+          onsubmit="return confirm('Release UGX {{ '{:,.0f}'.format(pay.net_amount_ugx) }} to {{ pay.payee.name if pay.payee else \"payee\" }}?')">
+      <button type="submit" class="btn btn-warning">Manual Release (Admin)</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

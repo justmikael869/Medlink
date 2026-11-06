@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block title %}Verify Medicine — MedLink Uganda{% endblock %}
+{% block head %}
+<style>
+.verify-hero{background:linear-gradient(135deg,#0f4c81 0%,#1d9e75 100%);border-radius:16px;padding:36px 32px;color:#fff;text-align:center;margin-bottom:24px;}
+.verify-hero h1{font-size:26px;font-weight:700;margin-bottom:8px;}
+.verify-hero p{font-size:14px;opacity:.85;max-width:500px;margin:0 auto 20px;}
+.verify-box{background:rgba(255,255,255,.12);border-radius:12px;padding:20px;max-width:480px;margin:0 auto;}
+.verify-box input{background:rgba(255,255,255,.95);border:none;border-radius:8px;padding:14px 16px;font-size:16px;width:100%;font-family:monospace;letter-spacing:.05em;margin-bottom:10px;box-sizing:border-box;color:#111;}
+.result-card{border-radius:14px;padding:24px;margin-bottom:20px;}
+.result-card.success{background:#f0fdf4;border:1.5px solid #86efac;}
+.result-card.warning{background:#fffbeb;border:1.5px solid #fcd34d;}
+.result-card.danger{background:#fef2f2;border:1.5px solid #fca5a5;}
+.result-icon{font-size:42px;margin-bottom:10px;}
+.result-title{font-size:18px;font-weight:700;margin-bottom:8px;}
+.result-msg{font-size:13px;line-height:1.7;margin-bottom:16px;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.detail-item{background:rgba(0,0,0,.04);border-radius:8px;padding:10px 12px;}
+.detail-label{font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;}
+.detail-value{font-size:13px;font-weight:600;color:#111;}
+.scan-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:10px 18px;font-size:13px;cursor:pointer;margin-top:4px;width:100%;}
+.how-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border-radius:999px;padding:6px 14px;font-size:12px;margin:4px;}
+</style>
+{% endblock %}
+{% block public_content %}{% block content %}
+
+<div class="verify-hero">
+  <div style="font-size:32px;margin-bottom:10px;"><i class="ti ti-shield-check"></i></div>
+  <h1>Verify Your Medicine</h1>
+  <p>Check if your medicine is genuine, NDA-approved, and not expired or recalled — before you take it.</p>
+  <div class="verify-box">
+    <form method="POST">
+      <input type="hidden" name="lat" id="vlat">
+      <input type="hidden" name="lon" id="vlon">
+      <input type="text" name="batch_number" value="{{ batch_no }}" 
+             placeholder="Enter batch number e.g. UG-2024-PFZ-001" 
+             autofocus autocomplete="off" autocapitalize="characters"
+             {% if batch_no %}style="border:2px solid #22c55e;"{% endif %}>
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;background:#1d9e75;border-color:#1d9e75;">
+        <i class="ti ti-shield-check"></i> Verify Now
+      </button>
+      <button type="button" class="scan-btn" onclick="startScan()">
+        <i class="ti ti-scan"></i> Scan QR / Barcode
+      </button>
+    </form>
+    <div id="scan-area" style="display:none;margin-top:10px;background:#000;border-radius:10px;overflow:hidden;height:220px;">
+      <video id="scan-video" style="width:100%;height:100%;object-fit:cover;"></video>
+    </div>
+  </div>
+  <div style="margin-top:16px;">
+    <span class="how-chip">Enter batch number from packaging</span>
+    <span class="how-chip">Or scan QR code on box</span>
+    <span class="how-chip">Always free, no login needed</span>
+  </div>
+</div>
+
+{% if result %}
+<div class="result-card {{ result.color }}" id="result-section">
+  <div class="result-icon"><i class="ti {{ result.icon }}"></i></div>
+  <div class="result-title">
+    {% if result.status == 'verified' %}GENUINE — Verified by MedLink &amp; NDA Uganda
+    {% elif result.status == 'expired' %}EXPIRED — Do Not Use
+    {% elif result.status == 'recalled' %}RECALLED — Do Not Use
+    {% else %}NOT FOUND — Possible Counterfeit
+    {% endif %}
+  </div>
+  <p class="result-msg">{{ result.message }}</p>
+
+  {% if result.status == 'verified' %}
+  <div class="detail-grid">
+    <div class="detail-item">
+      <div class="detail-label">Medicine</div>
+      <div class="detail-value">{{ result.medicine }}</div>
+    </div>
+    {% if result.generic %}<div class="detail-item">
+      <div class="detail-label">Generic name</div>
+      <div class="detail-value">{{ result.generic }}</div>
+    </div>{% endif %}
+    <div class="detail-item">
+      <div class="detail-label">Manufacturer</div>
+      <div class="detail-value">{{ result.manufacturer }}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Country of origin</div>
+      <div class="detail-value">{{ result.country or '—' }}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">NDA Approval No.</div>
+      <div class="detail-value">{{ result.nda_approval }}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Batch number</div>
+      <div class="detail-value" style="font-family:monospace;">{{ result.batch }}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Manufacture date</div>
+      <div class="detail-value">{{ result.manufacture_date }}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Expiry date</div>
+      <div class="detail-value" style="color:{% if result.days_left and result.days_left < 30 %}#dc2626{% else %}#16a34a{% endif %};">
+        {{ result.expiry }}{% if result.days_left %} · {{ result.days_left }} days left{% endif %}
+      </div>
+    </div>
+    {% if result.prescription_req %}
+    <div class="detail-item" style="grid-column:span 2;background:#fef9c3;border:1px solid #fde047;">
+      <div class="detail-label" style="color:#854d0e;">Prescription required</div>
+      <div class="detail-value" style="color:#854d0e;">This is a prescription-only medicine. A doctor's prescription is required.</div>
+    </div>{% endif %}
+    {% if result.cold_chain %}
+    <div class="detail-item" style="grid-column:span 2;background:#eff6ff;border:1px solid #93c5fd;">
+      <div class="detail-label" style="color:#1e40af;">Cold chain required</div>
+      <div class="detail-value" style="color:#1e40af;">Must be stored at 2–8°C. Check the fridge was working.</div>
+    </div>{% endif %}
+  </div>
+
+  {% elif result.status in ('expired', 'recalled') %}
+  <div class="detail-grid">
+    <div class="detail-item">
+      <div class="detail-label">Medicine</div>
+      <div class="detail-value">{{ result.medicine }}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Manufacturer</div>
+      <div class="detail-value">{{ result.manufacturer }}</div>
+    </div>
+    {% if result.expiry %}
+    <div class="detail-item" style="grid-column:span 2;">
+      <div class="detail-label">Expiry date</div>
+      <div class="detail-value" style="color:#dc2626;">{{ result.expiry }}</div>
+    </div>{% endif %}
+  </div>
+  {% endif %}
+
+  <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="{{ url_for('verify.index') }}" class="btn btn-secondary btn-sm">Verify another</a>
+    {% if result.status != 'verified' %}
+    <a href="tel:0800200680" class="btn btn-sm" style="background:#dc2626;color:#fff;border-color:#dc2626;">
+       Report to NDA: 0800 200 680
+    </a>{% endif %}
+  </div>
+</div>
+{% endif %}
+
+<!-- How it works -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><span class="card-title">Why verify your medicine?</span></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;font-size:13px;">
+    <div style="padding:12px;background:var(--surface-2);border-radius:10px;">
+      <div style="font-size:22px;margin-bottom:6px;color:#dc2626;"><i class="ti ti-alert-triangle"></i></div>
+      <div style="font-weight:600;margin-bottom:4px;">1 in 10 medicines is fake</div>
+      <div style="color:var(--text-muted);">WHO estimates over 10% of medicines in sub-Saharan Africa are substandard or falsified.</div>
+    </div>
+    <div style="padding:12px;background:var(--surface-2);border-radius:10px;">
+      <div style="font-size:22px;margin-bottom:6px;color:#d97706;"><i class="ti ti-clock-x"></i></div>
+      <div style="font-weight:600;margin-bottom:4px;">Expired medicines cause harm</div>
+      <div style="color:var(--text-muted);">Degraded ingredients can be ineffective or toxic — especially antibiotics and insulin.</div>
+    </div>
+    <div style="padding:12px;background:var(--surface-2);border-radius:10px;">
+      <div style="font-size:22px;margin-bottom:6px;color:#16a34a;"><i class="ti ti-certificate"></i></div>
+      <div style="font-weight:600;margin-bottom:4px;">NDA registers every batch</div>
+      <div style="color:var(--text-muted);">The Uganda National Drug Authority approves and tracks every legitimate medicine batch.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent checks (public stats) -->
+<div class="card">
+  <div class="card-header"><span class="card-title">Verification stats</span></div>
+  {% set total = namespace(n=0, ok=0, fail=0) %}
+  {% set counts = [] %}
+  <div style="display:flex;gap:24px;font-size:13px;flex-wrap:wrap;">
+    <div><div style="font-size:22px;font-weight:700;color:var(--primary);" id="stat-total">—</div><div style="color:var(--text-muted);">Total checks</div></div>
+    <div><div style="font-size:22px;font-weight:700;color:#16a34a;" id="stat-ok">—</div><div style="color:var(--text-muted);">Verified genuine</div></div>
+    <div><div style="font-size:22px;font-weight:700;color:#dc2626;" id="stat-fail">—</div><div style="color:var(--text-muted);">Issues found</div></div>
+  </div>
+</div>
+
+{% endblock %}{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-locate
+navigator.geolocation && navigator.geolocation.getCurrentPosition(p =>{
+  document.getElementById('vlat').value = p.coords.latitude;
+  document.getElementById('vlon').value = p.coords.longitude;
+});
+
+// Scroll to result
+{% if result %}
+document.getElementById('result-section')?.scrollIntoView({behavior:'smooth', block:'start'});
+{% endif %}
+
+// Load stats
+fetch('/verify/api/stats').then(r=>r.json()).then(d=>{
+  document.getElementById('stat-total').textContent = d.total || '—';
+  document.getElementById('stat-ok').textContent = d.verified || '—';
+  document.getElementById('stat-fail').textContent = d.issues || '—';
+}).catch(()=>{});
+
+// QR scanner stub — in production wire up a JS barcode library (quagga2 / ZXing)
+function startScan() {
+  const area = document.getElementById('scan-area');
+  const video = document.getElementById('scan-video');
+  if (area.style.display === 'none') {
+    area.style.display = 'block';
+    navigator.mediaDevices?.getUserMedia({video:{facingMode:'environment'}})
+      .then(stream =>{ video.srcObject = stream; video.play(); })
+      .catch(() =>{
+        area.style.display = 'none';
+        alert('Camera not available. Please type the batch number manually.');
+      });
+  } else {
+    area.style.display = 'none';
+    if (video.srcObject) { video.srcObject.getTracks().forEach(t=>t.stop()); }
+  }
+}
+</script>
+{% endblock %}

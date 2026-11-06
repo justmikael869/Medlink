@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Transport History — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Transport History</h1>
+    <p class="page-subtitle">{{ facility.name }} — all delivery requests</p>
+  </div>
+  <a href="{{ url_for('supplier.request_transport') }}" class="btn btn-primary">
+    <i class="ti ti-plus"></i>New Transport Request
+  </a>
+</div>
+
+{% if transports %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Reference</th>
+          <th>Company</th>
+          <th>Driver</th>
+          <th>Delivery Address</th>
+          <th>Cold Chain</th>
+          <th>Status</th>
+          <th>Date</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in transports %}
+        <tr>
+          <td style="font-weight:500;font-family:monospace;">{{ t.reference }}</td>
+          <td style="font-size:12px;">{{ t.company.name if t.company else '—' }}</td>
+          <td style="font-size:12px;">
+            {% if t.driver %}
+              {{ t.driver.name }}<br>
+              <span style="color:var(--text-muted);">{{ t.driver.phone or '' }}</span>
+            {% else %}
+              <span style="color:var(--text-muted);">Unassigned</span>
+            {% endif %}
+          </td>
+          <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            {{ t.delivery_address or '—' }}
+          </td>
+          <td style="text-align:center;">
+            {% if t.requires_cold_chain %}
+            <span class="badge badge-info">Yes</span>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            <span class="badge badge-{{ t.status }}">
+              {{ t.status.replace('_',' ').title() }}
+            </span>
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);">
+            {{ t.created_at.strftime('%d %b %Y') }}
+          </td>
+          <td>
+            <a href="{{ url_for('delivery.track', order_id=t.id) }}"
+               class="btn btn-secondary btn-sm">Track</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="empty-state card">
+  <i class="ti ti-truck-delivery"></i>
+  <p>No transport requests yet.</p>
+  <a href="{{ url_for('supplier.request_transport') }}" class="btn btn-primary">
+    Request Transport
+  </a>
+</div>
+{% endif %}
+{% endblock %}

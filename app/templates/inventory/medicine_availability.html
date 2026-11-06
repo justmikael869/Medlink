@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Medicine Availability — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Medicine Availability Search</h1>
+    <p class="page-subtitle">Search what is in stock across all facilities before prescribing</p>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <form method="GET" id="searchForm" style="display:flex;gap:10px;">
+    <input name="q" id="searchInput" value="{{ query }}"
+           placeholder="Search by medicine name, generic name or brand..."
+           style="flex:1;font-size:14px;" autofocus
+           oninput="liveSearch(this.value)">
+    <button type="submit" class="btn btn-primary">
+      <i class="ti ti-search"></i>Search
+    </button>
+  </form>
+</div>
+
+<div id="resultsContainer">
+{% if query %}
+  {% if results %}
+  <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+    {{ results|length }} stock line{% if results|length != 1 %}s{% endif %} found for
+    <strong>{{ query }}</strong>
+  </div>
+
+  {% set current_med = namespace(id=None) %}
+  {% for r in results %}
+    {% if r.medicine_id != current_med.id %}
+      {% if not loop.first %}</div></div>{% endif %}
+      {% set current_med.id = r.medicine_id %}
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-header">
+          <div>
+            <span class="card-title">{{ r.medicine_name }}</span>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">
+              {{ r.generic_name }}{% if r.dosage_form %} · {{ r.dosage_form }}{% endif %}
+              {% if r.strength %} · {{ r.strength }}{% endif %}
+              {% if r.cold_chain %}
+              <span class="badge badge-info" style="margin-left:6px;">Cold chain</span>
+              {% endif %}
+            </div>
+          </div>
+          <button onclick="selectMedicine('{{ r.medicine_id }}','{{ r.medicine_name }}')"
+                  class="btn btn-outline btn-sm">
+            <i class="ti ti-prescription"></i>Use in Prescription
+          </button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Facility</th>
+                <th>Type</th>
+                <th>Available</th>
+                <th>Status</th>
+                <th>Price (UGX)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+    {% endif %}
+              <tr style="{% if r.at_own_facility %}background:#f0fdf4;{% endif %}">
+                <td>
+                  <strong>{{ r.facility_name }}</strong>
+                  {% if r.at_own_facility %}
+                  <span class="badge badge-success" style="margin-left:5px;font-size:10px;">This facility</span>
+                  {% endif %}
+                </td>
+                <td><span class="badge badge-{{ r.facility_type }}">{{ r.facility_type.replace('_',' ').title() }}</span></td>
+                <td style="font-weight:600;color:{% if r.quantity == 0 %}var(--danger){% elif r.status == 'low' %}var(--warning){% else %}var(--accent){% endif %};">
+                  {{ r.quantity }}
+                </td>
+                <td><span class="badge badge-{{ r.status }}">{{ r.status.replace('_',' ').title() }}</span></td>
+                <td>{{ '{:,.0f}'.format(r.sell_price) if r.sell_price else '—' }}</td>
+                <td>
+                  {% if r.quantity >0 and not r.at_own_facility %}
+                  <a href="{{ url_for('messaging.compose') }}?type=supplier_enquiry"
+                     class="btn btn-secondary btn-sm">Request Transfer</a>
+                  {% endif %}
+                </td>
+              </tr>
+  {% endfor %}
+  {% if results %}</tbody></table></div></div>{% endif %}
+
+  {% else %}
+  <div class="card" style="text-align:center;padding:40px;">
+    <i class="ti ti-search" style="font-size:36px;color:var(--text-muted);display:block;margin-bottom:12px;"></i>
+    <p style="font-size:14px;font-weight:500;margin-bottom:6px;">No results for "{{ query }}"</p>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+      This medicine is not currently stocked in any facility on MedLink.
+    </p>
+    <a href="{{ url_for('supplier.browse') }}?q={{ query }}"
+       class="btn btn-primary">Search Supplier Catalogues</a>
+  </div>
+  {% endif %}
+
+{% else %}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
+  {% set categories = {} %}
+  {% for m in medicines_all %}
+    {% if m.category %}
+      {% set cat = m.category %}
+      <a href="?q={{ m.name }}"
+         style="padding:14px 16px;background:var(--card);border:1px solid var(--border);
+                border-radius:var(--radius);text-decoration:none;color:var(--text);
+                font-size:13px;transition:.1s;display:block;"
+         onmouseover="this.style.background='var(--primary-light)'"
+         onmouseout="this.style.background='var(--card)'">
+        <div style="font-weight:500;">{{ m.name }}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">{{ m.category }}</div>
+      </a>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+</div>
+
+<div id="selectedMed" style="display:none;position:fixed;bottom:20px;right:20px;
+     background:var(--primary);color:#fff;border-radius:10px;padding:14px 18px;
+     box-shadow:0 4px 20px rgba(0,0,0,.25);z-index:999;font-size:13px;max-width:320px;">
+  <div style="font-weight:600;margin-bottom:6px;" id="selectedMedName"></div>
+  <div style="font-size:12px;opacity:.8;margin-bottom:10px;">
+    Selected for prescription. Go back to the consultation to add it.
+  </div>
+  <button onclick="document.getElementById('selectedMed').style.display='none'"
+          style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:5px 12px;
+                 border-radius:6px;cursor:pointer;font-size:12px;">Dismiss</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let searchTimeout;
+function liveSearch(val) {
+  clearTimeout(searchTimeout);
+  if (val.length < 2) return;
+  searchTimeout = setTimeout(() =>{
+    fetch('/inventory/medicine-availability?q=' + encodeURIComponent(val) + '&format=json')
+      .then(r =>r.json())
+      .then(data =>{
+        if (data.length === 0) return;
+        // Could render inline results here — for now rely on form submit
+      });
+  }, 350);
+}
+
+function selectMedicine(id, name) {
+  document.getElementById('selectedMedName').textContent = name;
+  document.getElementById('selectedMed').style.display = 'block';
+  // Store in sessionStorage so the consultation form can pick it up
+  sessionStorage.setItem('selectedMedicineId', id);
+  sessionStorage.setItem('selectedMedicineName', name);
+}
+</script>
+{% endblock %}

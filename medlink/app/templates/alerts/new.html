@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}New Alert — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Raise Alert</h1>
+  <a href="{{ url_for('alerts.index') }}" class="btn btn-secondary">← Back</a>
+</div>
+<div class="card" style="max-width:580px;">
+  <form method="POST">
+    {% if facilities %}
+    <div class="form-group">
+      <label>Facility</label>
+      <select name="facility_id">
+        {% for f in facilities %}
+        <option value="{{ f.id }}">{{ f.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+    <div class="form-group">
+      <label>Medicine</label>
+      <select name="medicine_id" required>
+        <option value="">— Select medicine —</option>
+        {% for m in medicines %}
+        <option value="{{ m.id }}">{{ m.name }}{% if m.critical %} {% endif %}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Severity</label>
+        <select name="severity">
+          <option value="medium">Medium — Low stock</option>
+          <option value="critical">Critical — Out of stock</option>
+          <option value="low">Low — Getting low</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Quantity needed</label>
+        <input type="number" name="quantity_needed" min="0" placeholder="e.g. 100">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Note</label>
+      <textarea name="note" placeholder="Any context…"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Notify:</label>
+      <label class="checkbox-label"><input type="checkbox" name="notify_district">District Health Officer</label>
+      <label class="checkbox-label" style="margin-top:6px;"><input type="checkbox" name="notify_distributor">Distributor / Supplier</label>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-danger">Submit Alert</button>
+      <a href="{{ url_for('alerts.index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

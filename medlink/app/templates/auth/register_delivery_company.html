@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Register Delivery Company — MedLink Uganda{% endblock %}
+{% block public_content %}
+
+<div style="max-width:680px;margin:2rem auto;padding:0 1rem;">
+  <div style="margin-bottom:1.5rem;">
+    <a href="{{ url_for('auth.register_choose') }}" style="color:var(--text-muted);font-size:0.875rem;text-decoration:none;">
+      <i class="ti ti-arrow-left"></i>Back to registration options
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title"><i class="ti ti-motorbike" style="color:var(--primary);"></i>Register Delivery Company</h2>
+      <p style="color:var(--text-muted);font-size:0.875rem;margin:0.25rem 0 0;">
+        Once verified by the system admin, your company can receive transport requests and manage drivers on MedLink.
+      </p>
+    </div>
+    <div class="card-body">
+      <form method="POST">
+
+        <div style="background:var(--surface);border-radius:8px;padding:1.25rem;margin-bottom:1.5rem;border-left:3px solid var(--primary);">
+          <h4 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Company Information</h4>
+
+          <div class="form-group">
+            <label class="form-label">Company Name <span style="color:var(--danger);">*</span></label>
+            <input type="text" name="company_name" class="form-control" placeholder="e.g. SafeRide Medical Deliveries Ltd" required>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-group">
+              <label class="form-label">Company Phone <span style="color:var(--danger);">*</span></label>
+              <input type="tel" name="contact_phone" class="form-control" placeholder="+256 ..." required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Company Email <span style="color:var(--danger);">*</span></label>
+              <input type="email" name="contact_email" class="form-control" placeholder="info@yourcompany.ug" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Districts You Cover</label>
+            <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.5rem;">Select all districts your company can deliver to.</p>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.35rem;max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:0.75rem;">
+              {% for d in districts %}
+              <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;cursor:pointer;">
+                <input type="checkbox" name="coverage_districts" value="{{ d.name }}">{{ d.name }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-weight:500;">
+              <input type="checkbox" name="has_cold_chain">
+              <span>We have cold-chain capable vehicles (refrigerated vans / cold boxes)</span>
+            </label>
+            <p class="form-hint">Required for transporting vaccines, insulin, and temperature-sensitive medicines.</p>
+          </div>
+        </div>
+
+        <div style="background:var(--surface);border-radius:8px;padding:1.25rem;margin-bottom:1.5rem;border-left:3px solid #6a1b9a;">
+          <h4 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Company Manager Account</h4>
+          <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem;">This person will manage drivers, accept jobs, and track deliveries on behalf of the company.</p>
+
+          <div class="form-group">
+            <label class="form-label">Manager Full Name</label>
+            <input type="text" name="manager_name" class="form-control" placeholder="Full name of the manager">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Manager Email <span style="color:var(--danger);">*</span></label>
+            <input type="email" name="manager_email" class="form-control" placeholder="manager@yourcompany.ug" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Password <span style="color:var(--danger);">*</span></label>
+            <input type="password" name="password" class="form-control" minlength="6" required>
+          </div>
+        </div>
+
+        <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:1rem;margin-bottom:1.5rem;font-size:0.85rem;color:#1b5e20;">
+          <i class="ti ti-shield-check"></i>
+          <strong>Trust & Safety:</strong>MedLink pays verified companies directly. Individual drivers receive payment through their company. All transport is tracked and audited.
+        </div>
+
+        <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:1rem;margin-bottom:1.5rem;font-size:0.85rem;color:#5d4037;">
+          <i class="ti ti-clock"></i>
+          Your application will be reviewed by the system admin, usually within 24 hours. You will be notified on approval.
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%;">
+          <i class="ti ti-check"></i>Submit Application
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Batch Registry — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1 class="page-title">Medicine Batch Registry</h1>
+  <p class="page-subtitle">NDA-registered batches in the MedLink verification database</p></div>
+  <a href="{{ url_for('verify.add_batch') }}" class="btn btn-primary"><i class="ti ti-plus"></i>Register Batch</a>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <form method="GET" style="display:flex;gap:10px;flex-wrap:wrap;">
+    <input name="q" value="{{ q }}" placeholder="Search batch number…" style="flex:1;min-width:180px;">
+    <select name="status">
+      <option value="">All statuses</option>
+      {% for s in ['active','expired','recalled','quarantine'] %}
+      <option value="{{ s }}" {% if status==s %}selected{% endif %}>{{ s.title() }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary">Filter</button>
+  </form>
+</div>
+
+<div class="card">
+  <table style="width:100%;font-size:13px;border-collapse:collapse;">
+    <thead>
+      <tr style="border-bottom:1px solid var(--border);">
+        <th style="text-align:left;padding:8px 10px;color:var(--text-muted);font-weight:500;">Batch No.</th>
+        <th style="text-align:left;padding:8px 10px;color:var(--text-muted);font-weight:500;">Medicine</th>
+        <th style="text-align:left;padding:8px 10px;color:var(--text-muted);font-weight:500;">Manufacturer</th>
+        <th style="text-align:left;padding:8px 10px;color:var(--text-muted);font-weight:500;">Expiry</th>
+        <th style="text-align:left;padding:8px 10px;color:var(--text-muted);font-weight:500;">Status</th>
+        <th style="text-align:left;padding:8px 10px;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in batches.items %}
+      <tr style="border-bottom:0.5px solid var(--border);{% if b.status=='recalled' %}background:#fef2f2;{% elif b.status=='expired' %}background:#fffbeb;{% endif %}">
+        <td style="padding:10px;font-family:monospace;font-weight:600;">{{ b.batch_number }}</td>
+        <td style="padding:10px;">{{ b.medicine.name }}<br><span style="font-size:11px;color:var(--text-muted);">{{ b.medicine.generic_name or '' }}</span></td>
+        <td style="padding:10px;">{{ b.manufacturer or '—' }}<br><span style="font-size:11px;color:var(--text-muted);">{{ b.country_of_origin or '' }}</span></td>
+        <td style="padding:10px;">{{ b.expiry_date.strftime('%d %b %Y') if b.expiry_date else '—' }}</td>
+        <td style="padding:10px;">
+          <span class="badge" style="background:{% if b.status=='active' %}#dcfce7;color:#16a34a{% elif b.status=='recalled' %}#fee2e2;color:#dc2626{% elif b.status=='expired' %}#fef3c7;color:#92400e{% else %}#f3f4f6;color:#6b7280{% endif %};">
+            {{ b.status.upper() }}
+          </span>
+        </td>
+        <td style="padding:10px;">
+          {% if b.status == 'active' and current_user.role in ('system_admin','district_officer') %}
+          <form method="POST" action="{{ url_for('verify.recall_batch', bid=b.id) }}" onsubmit="return confirm('Mark as recalled?');" style="display:inline;">
+            <input type="hidden" name="reason" value="Recalled via admin panel">
+            <button type="submit" class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border-color:#fca5a5;">Recall</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if batches.pages >1 %}
+  <div style="display:flex;gap:8px;margin-top:12px;justify-content:center;">
+    {% if batches.has_prev %}<a href="?page={{ batches.prev_num }}&q={{ q }}&status={{ status }}" class="btn btn-secondary btn-sm">← Prev</a>{% endif %}
+    <span style="font-size:13px;color:var(--text-muted);padding:6px 10px;">Page {{ batches.page }} of {{ batches.pages }}</span>
+    {% if batches.has_next %}<a href="?page={{ batches.next_num }}&q={{ q }}&status={{ status }}" class="btn btn-secondary btn-sm">Next →</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

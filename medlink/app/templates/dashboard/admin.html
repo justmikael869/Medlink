@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}Platform Dashboard — MedLink{% endblock %}
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Platform Overview</h1>
+    <p class="page-subtitle">System Admin · {{ current_user.name }}</p>
+  </div>
+  <a href="{{ url_for('payments.audit_log') }}" class="btn btn-secondary btn-sm"><i class="ti ti-clipboard-list"></i>Audit Log</a>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">Platform Revenue</div>
+    <div class="stat-value green">UGX {{ '{:,.0f}'.format(platform_revenue) }}</div>
+    <div class="stat-sub">10% fee earned</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Escrow Held</div>
+    <div class="stat-value orange">UGX {{ '{:,.0f}'.format(escrow_held) }}</div>
+    <div class="stat-sub">pending release</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Paid Out</div>
+    <div class="stat-value blue">UGX {{ '{:,.0f}'.format(total_released) }}</div>
+    <div class="stat-sub">net to providers</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Registered Users</div>
+    <div class="stat-value blue">{{ total_users }}</div>
+    <div class="stat-sub">all roles</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Verified Doctors</div>
+    <div class="stat-value blue">{{ total_doctors }}</div>
+    <div class="stat-sub">UMDPC verified</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Consultations</div>
+    <div class="stat-value green">{{ total_consults }}</div>
+    <div class="stat-sub">completed</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Open Alerts</div>
+    <div class="stat-value {{ 'orange' if open_alerts else 'green' }}">{{ open_alerts }}</div>
+    <div class="stat-sub">across all facilities</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Active Deliveries</div>
+    <div class="stat-value {{ 'blue' if pending_deliveries else 'green' }}">{{ pending_deliveries }}</div>
+    <div class="stat-sub">in progress</div>
+  </div>
+</div>
+
+<!-- Row 1: Revenue trend + User role breakdown -->
+<div class="grid-2" style="margin-bottom:1.5rem;">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Platform Revenue — Last 7 Days (UGX)</span>
+    </div>
+    <div class="card-body" style="padding:1rem;">
+      <canvas id="revChart" height="120"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">User Distribution by Role</span>
+    </div>
+    <div class="card-body" style="display:flex;align-items:center;justify-content:center;padding:1rem;">
+      <canvas id="roleChart" height="160" style="max-width:260px;"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Row 2: Consult trend + Payment methods -->
+<div class="grid-2" style="margin-bottom:1.5rem;">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">New Registrations vs Consultations — Last 7 Days</span>
+    </div>
+    <div class="card-body" style="padding:1rem;">
+      <canvas id="consultChart" height="120"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Top-Up Payment Methods</span>
+    </div>
+    <div class="card-body" style="display:flex;align-items:center;justify-content:center;padding:1rem;">
+      <canvas id="payChart" height="160" style="max-width:260px;"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Row 3: Recent payments + Shortage bar chart -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Recent Payments</span>
+      <a href="{{ url_for('payments.index') }}" class="btn btn-secondary btn-sm">View all</a>
+    </div>
+    {% if recent_payments %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Reference</th><th>Type</th><th>Amount</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for p in recent_payments %}
+          <tr>
+            <td><a href="{{ url_for('payments.detail', pay_id=p.id) }}" style="color:var(--primary);font-weight:500;">{{ p.reference }}</a></td>
+            <td><span class="badge badge-info">{{ (p.payment_type or '').replace('_',' ').title() }}</span></td>
+            <td style="font-weight:500;">UGX {{ '{:,.0f}'.format(p.amount_ugx) }}</td>
+            <td><span class="badge badge-{{ p.status }}">{{ p.status.title() }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:24px;"><i class="ti ti-credit-card"></i><p>No payments yet</p></div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Top Medicine Shortages</span>
+      <a href="{{ url_for('search.gap_map') }}" class="btn btn-secondary btn-sm">Shortage map</a>
+    </div>
+    <div class="card-body" style="padding:1rem;">
+      <canvas id="shortageChart" height="160"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+var L7 = {{ labels_7|safe }};
+var rev = {{ rev_trend|safe }};
+var uTrend = {{ user_trend|safe }};
+var cTrend = {{ consult_trend|safe }};
+var roles = {{ role_breakdown|safe }};
+var payM = {{ pay_methods|safe }};
+var gaps = {% if top_gaps %}{"labels":[{% for g in top_gaps %}"{{ g.search_query[:16] }}"{% if not loop.last %},{% endif %}{% endfor %}],"data":[{% for g in top_gaps %}{{ g.count }}{% if not loop.last %},{% endif %}{% endfor %}]}{% else %}{"labels":[],"data":[]}{% endif %};
+
+var C = Chart.defaults;
+C.font.family = 'Inter, sans-serif';
+C.color = '#6b7280';
+
+// Revenue trend
+new Chart(document.getElementById('revChart'), {
+  type:'line',
+  data:{
+    labels:L7,
+    datasets:[{label:'Revenue (UGX)',data:rev,borderColor:'#16a34a',backgroundColor:'rgba(22,163,74,0.1)',tension:0.4,fill:true,pointRadius:4}]
+  },
+  options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'UGX '+v.toLocaleString()}}}}
+});
+
+// Role donut
+new Chart(document.getElementById('roleChart'), {
+  type:'doughnut',
+  data:{
+    labels: Object.keys(roles).map(r=>r.replace(/_/g,' ')),
+    datasets:[{data:Object.values(roles),backgroundColor:['#3b82f6','#16a34a','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899']}]
+  },
+  options:{plugins:{legend:{position:'right',labels:{boxWidth:12,font:{size:11}}}},cutout:'60%'}
+});
+
+// Users vs Consults
+new Chart(document.getElementById('consultChart'), {
+  type:'bar',
+  data:{
+    labels:L7,
+    datasets:[
+      {label:'New Users',data:uTrend,backgroundColor:'rgba(59,130,246,0.7)',borderRadius:4},
+      {label:'Consultations',data:cTrend,backgroundColor:'rgba(22,163,74,0.7)',borderRadius:4}
+    ]
+  },
+  options:{plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+});
+
+// Payment methods donut
+var payLabels = Object.keys(payM).map(function(k){
+  return k==='mtn_momo'?'MTN MoMo':k==='airtel_money'?'Airtel Money':k==='paypal'?'PayPal':k==='visa'?'Visa':k==='mastercard'?'Mastercard':k;
+});
+new Chart(document.getElementById('payChart'), {
+  type:'doughnut',
+  data:{
+    labels:payLabels,
+    datasets:[{data:Object.values(payM),backgroundColor:['#FFCC00','#ED1C24','#003087','#1a1f71','#252525']}]
+  },
+  options:{plugins:{legend:{position:'right',labels:{boxWidth:12,font:{size:11}}}},cutout:'55%'}
+});
+
+// Shortage horizontal bar
+new Chart(document.getElementById('shortageChart'), {
+  type:'bar',
+  data:{
+    labels:gaps.labels,
+    datasets:[{label:'Searches with no result',data:gaps.data,backgroundColor:'rgba(239,68,68,0.75)',borderRadius:4}]
+  },
+  options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{stepSize:1}}}}
+});
+</script>
+{% endblock %}

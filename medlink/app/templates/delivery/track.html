@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Track Order {{ dorder.reference }} — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:580px;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">{{ '' if dorder.delivery_type == 'medicine' else '' }} Order {{ dorder.reference }}</h1>
+      <p class="page-subtitle">{{ dorder.delivery_type.replace('_',' ').title() }}</p>
+    </div>
+    <a href="{{ url_for('telemedicine.my_appointments') }}" class="btn btn-secondary">← Back</a>
+  </div>
+
+  {% set steps = ['pending','assigned','picked_up','en_route','delivered'] %}
+  {% set step_labels = {'pending':'Order Placed','assigned':'Driver Assigned','picked_up':'Picked Up','en_route':'On the Way','delivered':'Delivered'} %}
+  {% set step_icons = {'pending':'','assigned':'','picked_up':'','en_route':'','delivered':''} %}
+
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      {% for s in steps %}
+      {% set is_done = steps.index(dorder.status) >= steps.index(s) %}
+      <div style="text-align:center;flex:1;">
+        <div style="width:40px;height:40px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:18px;
+             background:{{ '#dcfce7' if is_done else '#f3f4f6' }};border:2px solid {{ '#22c55e' if is_done else '#e5e7eb' }};">
+          {{ step_icons[s] }}
+        </div>
+        <div style="font-size:11px;color:{{ '#166534' if is_done else '#9ca3af' }};font-weight:{{ '600' if is_done else '400' }};">
+          {{ step_labels[s] }}
+        </div>
+      </div>
+      {% if not loop.last %}
+      <div style="height:2px;flex:1;background:{{ '#22c55e' if steps.index(dorder.status) >steps.index(s) else '#e5e7eb' }};max-width:40px;"></div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Order Details</span></div>
+    <table style="font-size:13px;">
+      <tr><td style="color:#6b7280;padding:5px 0;width:140px;">Reference</td><td><strong>{{ dorder.reference }}</strong></td></tr>
+      <tr><td style="color:#6b7280;padding:5px 0;">Status</td><td><span class="badge badge-{{ dorder.status }}">{{ dorder.status.replace('_',' ').title() }}</span></td></tr>
+      {% if dorder.driver %}<tr><td style="color:#6b7280;padding:5px 0;">Driver</td><td>{{ dorder.driver.name }} · {{ dorder.driver.phone or '' }}</td></tr>{% endif %}
+      {% if dorder.delivery_address %}<tr><td style="color:#6b7280;padding:5px 0;">Delivering to</td><td>{{ dorder.delivery_address }}</td></tr>{% endif %}
+      <tr><td style="color:#6b7280;padding:5px 0;">Delivery Fee</td><td>UGX {{ '{:,.0f}'.format(dorder.fee_ugx) }}</td></tr>
+      {% if dorder.requires_cold_chain %}<tr><td style="color:#6b7280;padding:5px 0;">Cold Chain</td><td>Required</td></tr>{% endif %}
+    </table>
+  </div>
+
+  {% if dorder.status not in ('delivered','cancelled') %}
+  <div style="text-align:center;margin-top:16px;">
+    <p style="font-size:13px;color:#9ca3af;">Page refreshes automatically every 30 seconds</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+{% if dorder.status not in ('delivered','cancelled') %}
+<script>setTimeout(() =>location.reload(), 30000);</script>
+{% endif %}
+{% endblock %}

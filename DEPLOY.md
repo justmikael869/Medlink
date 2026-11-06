@@ -24,7 +24,7 @@ Put the contents of the `medlink` folder at the root of a repo (Procfile and ren
 New > **Blueprint** > pick the repo (reads render.yaml). When asked, fill in:
 - `DATABASE_URL` = your Supabase pooler string
 - `APP_URL` = your Render URL (e.g. https://medlink-uganda.onrender.com)
-- Optional keys (ANTHROPIC_API_KEY, DAILY_API_KEY, ...) can stay blank: the app runs in demo mode.
+- Optional keys (ANTHROPIC_API_KEY, ...) can stay blank: the app runs in demo mode.
 
 Or create a normal Web Service by hand: Build `pip install -r requirements.txt`,
 Start `gunicorn run:app --workers 1 --threads 4 --timeout 120 --bind 0.0.0.0:$PORT`.

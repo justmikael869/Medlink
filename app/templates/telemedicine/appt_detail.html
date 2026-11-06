@@ -15,45 +15,21 @@
 
 {% if appt.appt_type == 'remote' %}
 <div class="card" style="margin-bottom:16px;border-left:4px solid var(--primary);">
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
     <div>
       <div class="card-title" style="margin-bottom:2px;"><i class="ti ti-video" style="margin-right:6px;color:var(--primary);"></i>Video Consultation Room</div>
-      <p style="font-size:12px;color:var(--text-muted);margin:0;">Secure video call for both patient and doctor</p>
+      <p style="font-size:12px;color:var(--text-muted);margin:0;">Private video call between the patient and the doctor</p>
     </div>
-    {% if appt.status == 'confirmed' and appt.video_room_url %}
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <button onclick="toggleVideoRoom()" class="btn btn-primary btn-sm" id="join-btn">
-        <i class="ti ti-video"></i>Join Call
-      </button>
-      <a href="{{ appt.video_room_url }}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">
-        <i class="ti ti-external-link"></i>Open in new tab
-      </a>
-    </div>
-    {% elif appt.status == 'confirmed' %}
-    <span style="font-size:12px;color:var(--text-muted);"><i class="ti ti-clock"></i>Room being prepared…</span>
+    {% if appt.status in ('confirmed', 'in_progress') and current_user.id in (appt.patient_id, appt.doctor_id) %}
+    <a href="{{ url_for('telemedicine.video_room', appt_id=appt.id) }}" class="btn btn-primary btn-sm">
+      <i class="ti ti-video"></i>Join Call
+    </a>
+    {% elif appt.status in ('confirmed', 'in_progress') %}
+    <span style="font-size:12px;color:var(--text-muted);">Only the patient and doctor can join this call</span>
     {% else %}
     <span style="font-size:12px;color:var(--text-muted);">Available once appointment is confirmed</span>
     {% endif %}
   </div>
-
-  {% if appt.status == 'confirmed' and appt.video_room_url %}
-  <div id="video-room" style="display:none;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:#000;">
-    <div style="background:#1a1a2e;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;">
-      <span style="font-size:12px;color:#94a3b8;"><i class="ti ti-shield-check" style="color:#22c55e;margin-right:4px;"></i>Secure · End-to-end encrypted</span>
-      <button onclick="toggleVideoRoom()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:12px;"><i class="ti ti-x"></i>Close</button>
-    </div>
-    <iframe
-      src="{{ appt.video_room_url }}"
-      allow="camera; microphone; fullscreen; display-capture; autoplay"
-      style="width:100%;height:520px;border:none;display:block;"
-      title="Video consultation room">
-    </iframe>
-  </div>
-  <div style="font-size:11px;color:var(--text-muted);margin-top:8px;display:flex;align-items:center;gap:6px;">
-    <i class="ti ti-link"></i>
-    <span style="font-family:monospace;">{{ appt.video_room_url }}</span>
-  </div>
-  {% endif %}
 </div>
 {% endif %}
 
@@ -208,19 +184,4 @@
   </a>
   {% endif %}
 </div>
-{% endblock %}
-{% block scripts %}
-<script>
-function toggleVideoRoom() {
-  const room = document.getElementById('video-room');
-  const btn = document.getElementById('join-btn');
-  if (!room) return;
-  const showing = room.style.display !== 'none';
-  room.style.display = showing ? 'none' : 'block';
-  btn.innerHTML = showing
-    ? '<i class="ti ti-video"></i>Join Call'
-    : '<i class="ti ti-x"></i>End Call';
-  if (!showing) room.scrollIntoView({behavior:'smooth', block:'nearest'});
-}
-</script>
 {% endblock %}

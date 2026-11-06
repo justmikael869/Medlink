@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}My Catalogue — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ facility.name }}</h1>
+    <p class="page-subtitle">Supplier Catalogue — {{ items|length }} medicines listed</p>
+  </div>
+  <a href="{{ url_for('supplier.orders') }}" class="btn btn-secondary">
+    <i class="ti ti-shopping-cart"></i>Incoming Orders
+  </a>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Add Medicine to Catalogue</span></div>
+    <form method="POST" action="{{ url_for('supplier.add_to_catalogue') }}">
+      <div class="form-group">
+        <label>Medicine</label>
+        <select name="medicine_id" required>
+          <option value="">Select medicine...</option>
+          {% for m in medicines %}
+          <option value="{{ m.id }}">{{ m.name }} ({{ m.dosage_form }}, {{ m.strength }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Unit Price (UGX)</label>
+          <input name="unit_price_ugx" type="number" min="0" step="50" required placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Min Order Qty</label>
+          <input name="min_order_qty" type="number" min="1" value="10">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Lead Time (days)</label>
+        <input name="lead_time_days" type="number" min="1" max="90" value="7">
+      </div>
+      <button type="submit" class="btn btn-success"><i class="ti ti-plus"></i>Add to Catalogue</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Current Catalogue ({{ items|length }})</span></div>
+    {% if items %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Medicine</th><th>Price (UGX)</th><th>Min Qty</th><th>Lead (days)</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td style="font-weight:500;">{{ item.medicine.name }}<br>
+              <small style="color:var(--text-muted);">{{ item.medicine.dosage_form }}, {{ item.medicine.strength }}</small>
+            </td>
+            <td>{{ '{:,.0f}'.format(item.unit_price_ugx) }}</td>
+            <td>{{ item.min_order_qty }}</td>
+            <td>{{ item.lead_time_days }}</td>
+            <td><span class="badge badge-{{ 'success' if item.in_stock else 'danger' }}">{{ 'In Stock' if item.in_stock else 'Out of Stock' }}</span></td>
+            <td>
+              <form method="POST" action="{{ url_for('supplier.toggle_stock', item_id=item.id) }}">
+                <button type="submit" class="btn btn-secondary btn-sm">Toggle</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:24px;"><i class="ti ti-package"></i><p>No medicines in catalogue yet.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

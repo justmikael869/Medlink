@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}PHQ-9 Result — MedLink{% endblock %}
+{% block public_content %}{% block content %}
+<div style="max-width:560px;margin:0 auto;">
+
+{% set color_map = {'minimal':'#dcfce7','mild':'#fef9c3','moderate':'#fed7aa','moderately_severe':'#fee2e2','severe':'#fce7f3'} %}
+{% set text_map = {'minimal':'#166534','mild':'#854d0e','moderate':'#9a3412','moderately_severe':'#991b1b','severe':'#831843'} %}
+{% set icon_map = {'minimal':'','mild':'','moderate':'','moderately_severe':'','severe':''} %}
+{% set bar_map = {'minimal':20,'mild':40,'moderate':60,'moderately_severe':80,'severe':100} %}
+
+<div style="background:{{ color_map[severity] }};border-radius:16px;padding:28px;text-align:center;margin-bottom:20px;">
+  <div style="font-size:48px;margin-bottom:10px;">{{ icon_map[severity] }}</div>
+  <div style="font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:{{ text_map[severity] }};font-weight:600;margin-bottom:6px;">
+    PHQ-9 Score: {{ score }} / 27
+  </div>
+  <h2 style="font-size:20px;font-weight:700;color:{{ text_map[severity] }};margin-bottom:10px;">
+    {{ severity.replace('_',' ').title() }} Depression
+  </h2>
+  <div style="background:rgba(0,0,0,.06);border-radius:999px;height:8px;margin:0 auto 12px;max-width:300px;overflow:hidden;">
+    <div style="width:{{ bar_map[severity] }}%;height:100%;background:{{ text_map[severity] }};border-radius:999px;"></div>
+  </div>
+  <p style="font-size:13px;color:{{ text_map[severity] }};line-height:1.7;max-width:400px;margin:0 auto;">{{ label }}</p>
+</div>
+
+{% if crisis %}
+<div style="background:#fef2f2;border:2px solid #ef4444;border-radius:12px;padding:20px;margin-bottom:20px;text-align:center;">
+  <div style="font-size:28px;margin-bottom:8px;color:#dc2626;"><i class="ti ti-alert-triangle"></i></div>
+  <div style="font-weight:700;font-size:15px;color:#dc2626;margin-bottom:8px;">You indicated thoughts of self-harm</div>
+  <p style="font-size:13px;color:#7f1d1d;margin-bottom:14px;">You are not alone. Please reach out to someone who can help right now.</p>
+  <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+    <a href="tel:0800212121" class="btn" style="background:#dc2626;color:#fff;border-color:#dc2626;"><i class="ti ti-phone"></i>Befrienders: 0800 212 121</a>
+    <a href="tel:999" class="btn btn-secondary"><i class="ti ti-ambulance"></i>Emergency: 999</a>
+  </div>
+</div>
+{% endif %}
+
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><span class="card-title">What this means</span></div>
+  {% if severity == 'minimal' %}
+  <p style="font-size:13px;color:var(--text-secondary);">Your symptoms are minimal. Keep taking care of yourself — sleep, exercise, connection with others, and purpose are protective factors.</p>
+  {% elif severity == 'mild' %}
+  <p style="font-size:13px;color:var(--text-secondary);">Mild depression is very common and very treatable. Consider talking to someone — a trusted friend, counsellor, or doctor. Small lifestyle changes can make a big difference.</p>
+  {% elif severity == 'moderate' %}
+  <p style="font-size:13px;color:var(--text-secondary);">Moderate depression benefits from professional support. A consultation with a doctor or mental health professional is recommended. Many people find therapy and/or medication very effective.</p>
+  {% else %}
+  <p style="font-size:13px;color:var(--text-secondary);">Your score suggests significant depression that needs professional care. Please don't face this alone — reach out to a doctor or call Befrienders Uganda.</p>
+  {% endif %}
+</div>
+
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+  <a href="{{ url_for('telemedicine.doctor_list', spec='Psychiatry & Mental Health') }}" class="btn btn-primary">
+     Talk to a mental health doctor
+  </a>
+  <a href="{{ url_for('mentalhealth.chat') }}" class="btn btn-secondary">
+     Anonymous chat support
+  </a>
+  <a href="{{ url_for('mentalhealth.phq9') }}" class="btn btn-secondary">
+     Retake
+  </a>
+</div>
+
+<div style="font-size:11px;color:var(--text-muted);text-align:center;">
+  PHQ-9 © Pfizer Inc. Reproduced with permission. Validated for depression screening. Not a diagnosis.
+</div>
+
+{% endblock %}{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Record Delivery — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:480px;margin:0 auto;text-align:center;">
+  <div style="font-size:36px;margin-bottom:12px;color:#16a34a;"><i class="ti ti-baby-carriage"></i></div>
+  <h1 style="font-size:22px;font-weight:700;margin-bottom:6px;">Congratulations!</h1>
+  <p style="font-size:14px;color:var(--text-muted);margin-bottom:24px;">
+    Record the birth to switch to your postnatal care schedule.
+  </p>
+  <div class="card" style="text-align:left;">
+    <form method="POST">
+      <div class="form-group">
+        <label>Date of delivery *</label>
+        <input type="date" name="delivery_date" required max="{{ today.isoformat() if today else '' }}">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
+         Record birth & start postnatal schedule
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

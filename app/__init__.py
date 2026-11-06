@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_cors import CORS
+from flask_socketio import SocketIO
 from dotenv import load_dotenv
 import os
 
@@ -9,6 +10,10 @@ load_dotenv()
 
 db = SQLAlchemy()
 login_manager = LoginManager()
+# Real-time channel used only for video-call signalling (app/sockets.py).
+# 'threading' mode needs no extra server software; it matches the gunicorn
+# gthread setup in the Procfile.
+socketio = SocketIO()
 
 
 def _database_url():
@@ -49,6 +54,8 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     CORS(app)
+    socketio.init_app(app, async_mode='threading', cors_allowed_origins='*')
+    from app import sockets  # noqa: F401  (registers the video-call handlers)
 
     from app.routes.pages import pages_bp
     from app.routes.auth import auth_bp

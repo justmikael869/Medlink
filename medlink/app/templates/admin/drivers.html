@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Driver Verification — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Driver Verification</h1>
+</div>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Phone</th><th>Vehicle</th><th>Plate</th><th>Cold Box</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for d in drivers %}
+        <tr>
+          <td><strong>{{ d.name }}</strong><br><small style="color:#9ca3af;">{{ d.email }}</small></td>
+          <td>{{ d.phone or '—' }}</td>
+          <td>{{ d.vehicle_type or '—' }}</td>
+          <td>{{ d.plate_number or '—' }}</td>
+          <td>{{ ' Yes' if d.has_cold_box else '—' }}</td>
+          <td><span class="badge badge-{{ 'verified' if d.verified_driver else 'unverified' }}">{{ 'Verified' if d.verified_driver else 'Pending' }}</span></td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.verify_driver', user_id=d.id) }}">
+              <button type="submit" class="btn btn-{{ 'danger' if d.verified_driver else 'success' }} btn-sm">
+                {{ 'Revoke' if d.verified_driver else 'Verify' }}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

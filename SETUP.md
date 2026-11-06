@@ -142,7 +142,9 @@ medlink/
 ### Video Call
 1. Log in as doctor, confirm a remote appointment
 2. Log in as patient, open the appointment
-3. "Join Call" button appears → Daily.co iframe embeds in page
+3. "Join Call" button appears → opens the built-in video room (no key needed)
+4. Both join: each sees the other. Test mute, camera, screen share and chat
+   (use two different browsers or one normal + one private window)
 
 ### Prescription PDF
 1. Doctor completes a consultation with prescriptions
@@ -164,4 +166,4 @@ All features work without any API keys in demo mode:
 |-----|-------------|----------------|
 | `ANTHROPIC_API_KEY` | console.anthropic.com | Real AI for symptom checker + mental health chat |
 | `AT_USERNAME` + `AT_API_KEY` | africastalking.com | Real SMS reminders (otherwise prints to console) |
-| `DAILY_API_KEY` | daily.co | Real video rooms (otherwise shows placeholder URL) |
+| `TURN_URLS` + `TURN_USERNAME` + `TURN_CREDENTIAL` | any TURN provider | Optional relay so video connects on restrictive mobile networks (video works without it on most networks) |

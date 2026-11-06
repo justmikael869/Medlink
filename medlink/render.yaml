@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: medlink-uganda
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn run:app --workers 1 --threads 4 --timeout 120 --bind 0.0.0.0:$PORT
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false   # paste your Supabase POOLER connection string in the Render dashboard
+      - key: ENABLE_SCHEDULER
+        value: "true"
+      - key: APP_URL
+        sync: false   # e.g. https://medlink-uganda.onrender.com
+      # Optional integrations - leave blank to run in demo mode
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: DAILY_API_KEY
+        sync: false
+      - key: AT_API_KEY
+        sync: false
+      - key: AT_USERNAME
+        sync: false
+      - key: FLUTTERWAVE_SECRET_KEY
+        sync: false
+      - key: FLUTTERWAVE_WEBHOOK_SECRET
+        sync: false
+      - key: PAYMENT_WEBHOOK_SECRET
+        sync: false

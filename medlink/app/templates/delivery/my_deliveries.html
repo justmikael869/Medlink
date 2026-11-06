@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}My Deliveries — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">My Deliveries</h1>
+</div>
+{% if orders %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Reference</th><th>Type</th><th>Status</th><th>Driver</th><th>Fee (UGX)</th><th>Date</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td style="font-weight:500;">{{ o.reference }}</td>
+          <td><span class="badge badge-{{ o.delivery_type }}">{{ o.delivery_type.replace('_',' ').title() }}</span></td>
+          <td><span class="badge badge-{{ o.status }}">{{ o.status.replace('_',' ').title() }}</span></td>
+          <td style="font-size:12px;">{{ o.driver.name if o.driver else 'Assigning…' }}</td>
+          <td>{{ '{:,.0f}'.format(o.fee_ugx) }}</td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ o.created_at.strftime('%d %b %Y') }}</td>
+          <td>
+            <a href="{{ url_for('delivery.track', order_id=o.id) }}"
+               class="btn btn-secondary btn-sm">Track</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="empty-state card">
+  <i class="ti ti-truck-delivery"></i>
+  <p>No deliveries yet.</p>
+</div>
+{% endif %}
+{% endblock %}

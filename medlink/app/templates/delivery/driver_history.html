@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Delivery History — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Delivery History</h1>
+    <p class="page-subtitle">{{ orders|length }} completed deliveries</p>
+  </div>
+</div>
+{% if orders %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Reference</th><th>Type</th><th>Patient</th><th>Cold Chain</th><th>Fee Earned (UGX)</th><th>Date</th></tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td style="font-weight:500;">{{ o.reference }}</td>
+          <td>{{ o.delivery_type.replace('_',' ').title() }}</td>
+          <td style="font-size:12px;">{{ o.patient.name if o.patient else '—' }}</td>
+          <td>{{ 'Yes' if o.requires_cold_chain else '—' }}</td>
+          <td style="font-weight:500;color:var(--accent);">{{ '{:,.0f}'.format(o.fee_ugx * 0.9) }}</td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ o.updated_at.strftime('%d %b %Y') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="empty-state card">
+  <i class="ti ti-history"></i>
+  <p>No completed deliveries yet.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Book a Hospital / Clinic — MedLink{% endblock %}
+{% block public_content %}{% block content %}
+<div style="max-width:900px;margin:0 auto;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Book a Hospital or Clinic</h1>
+      <p class="page-subtitle">Find a verified facility near you — they'll be expecting you when you arrive</p>
+    </div>
+    <a href="{{ url_for('telemedicine.triage') }}" class="btn btn-secondary">Symptom Check First</a>
+  </div>
+
+  <form method="GET" style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+    <select name="district_id" style="flex:1;min-width:180px;">
+      <option value="">All districts</option>
+      {% for d in districts %}
+      <option value="{{ d.id }}" {% if d.id == selected_district %}selected{% endif %}>{{ d.name }}</option>
+      {% endfor %}
+    </select>
+    <select name="ftype" style="flex:1;min-width:180px;">
+      <option value="">All facility types</option>
+      <option value="government_clinic" {% if selected_ftype=='government_clinic' %}selected{% endif %}>Government Hospital / Clinic</option>
+      <option value="private_clinic" {% if selected_ftype=='private_clinic' %}selected{% endif %}>Private Clinic / Hospital</option>
+      <option value="pharmacy" {% if selected_ftype=='pharmacy' %}selected{% endif %}>Pharmacy</option>
+      <option value="ngo_clinic" {% if selected_ftype=='ngo_clinic' %}selected{% endif %}>NGO / Mission Clinic</option>
+    </select>
+    <input name="lat" type="hidden" id="ilat" value="{{ lat or '' }}">
+    <input name="lon" type="hidden" id="ilon" value="{{ lon or '' }}">
+    <button type="submit" class="btn btn-primary">Search</button>
+    <button type="button" onclick="getGPS()" class="btn btn-secondary">Near Me</button>
+  </form>
+
+  {% set type_icons = {'pharmacy':'','government_clinic':'','private_clinic':'','drug_shop':'','ngo_clinic':'','distributor':''} %}
+
+  {% if institutions %}
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;">
+    {% for f in institutions %}
+    <div class="card" style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <div style="font-size:28px;flex-shrink:0;">{{ type_icons.get(f.facility_type,'') }}</div>
+        <div>
+          <div style="font-weight:600;font-size:14px;line-height:1.3;">{{ f.name }}</div>
+          <span class="badge badge-{{ f.facility_type }}">{{ f.facility_type.replace('_',' ').title() }}</span>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#6b7280;display:flex;flex-direction:column;gap:3px;">
+        {% if f.address %}<span>{{ f.address }}</span>{% endif %}
+        {% if f.district %}<span>{{ f.district.name }}</span>{% endif %}
+        {% if f.phone %}<span>{{ f.phone }}</span>{% endif %}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:auto;flex-wrap:wrap;">
+        <a href="{{ url_for('telemedicine.book_institution', facility_id=f.id) }}"
+           class="btn btn-primary btn-sm" style="flex:1;justify-content:center;">Book Appointment</a>
+        {% if f.latitude and f.longitude %}
+        <a href="https://maps.google.com/?q={{ f.latitude }},{{ f.longitude }}"
+           target="_blank" class="btn btn-secondary btn-sm"></a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card" style="text-align:center;padding:40px;">
+    <div style="font-size:32px;margin-bottom:10px;color:#9ca3af;"><i class="ti ti-building-hospital"></i></div>
+    <p style="color:#6b7280;">No verified facilities found for this filter.</p>
+    <a href="{{ url_for('telemedicine.institution_list') }}" class="btn btn-secondary" style="margin-top:12px;">Clear filters</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}{% endblock %}
+{% block scripts %}
+<script>
+function getGPS(){
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(p=>{
+    document.getElementById('ilat').value=p.coords.latitude.toFixed(6);
+    document.getElementById('ilon').value=p.coords.longitude.toFixed(6);
+    document.querySelector('form').submit();
+  });
+}
+</script>
+{% endblock %}

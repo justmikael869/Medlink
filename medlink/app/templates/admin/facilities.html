@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Facilities — Admin{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">All Facilities</h1>
+  <span style="font-size:13px;color:#6b7280;">{{ facilities|length }} registered</span>
+</div>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Type</th><th>District</th><th>Country</th><th>Phone</th><th>Licence</th><th>Verified</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for f in facilities %}
+        <tr>
+          <td><strong>{{ f.name }}</strong><br><small style="color:#9ca3af;">{{ f.level or '' }}</small></td>
+          <td><span class="badge badge-{{ f.facility_type }}">{{ f.facility_type.replace('_',' ').title() }}</span></td>
+          <td>{{ f.district.name if f.district else '—' }}</td>
+          <td>{{ f.country }}</td>
+          <td>{{ f.phone or '—' }}</td>
+          <td style="font-size:12px;color:#6b7280;">{{ f.licence_no or '—' }}</td>
+          <td>
+            <span class="badge badge-{{ 'verified' if f.verified else 'unverified' }}">
+              {{ ' Verified' if f.verified else 'Unverified' }}
+            </span>
+          </td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.verify_facility', fid=f.id) }}">
+              <button type="submit" class="btn btn-sm {{ 'btn-secondary' if f.verified else 'btn-success' }}">
+                {{ 'Unverify' if f.verified else 'Verify' }}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

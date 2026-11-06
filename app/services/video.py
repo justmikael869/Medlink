@@ -1,87 +1,55 @@
 """
-Video consultation service — uses Daily.co free tier.
-Set DAILY_API_KEY in .env for real rooms.
-Without the key returns a simulated meeting link.
+Video consultation service: built-in WebRTC, no third-party video account.
+
+The call itself is set up in app/sockets.py (signalling) and
+app/static/js/medlink_video.js (browser side). This module only provides:
+
+  * create_consultation_room(appointment): the address of the appointment's
+    video room, saved on the appointment when the doctor confirms it.
+  * get_ice_servers(): the network-helper servers the browsers use to find
+    each other.
+
+Optional environment variables (all can stay unset):
+  TURN_URLS        comma-separated, e.g. "turn:relay.example.com:443?transport=tcp"
+  TURN_USERNAME
+  TURN_CREDENTIAL
+
+Without TURN, calls connect directly between the two browsers using free
+public STUN servers. That works on most home and office networks, but some
+mobile networks block direct connections. A TURN relay fixes that; see the
+note in README.md.
 """
-import os, uuid, json
-import urllib.request
+import os
 
-DAILY_BASE = 'https://api.daily.co/v1'
+from flask import url_for
 
-
-def _key():
-    return os.getenv('DAILY_API_KEY', '').strip()
-
-
-def _simulation():
-    return not _key()
+DEFAULT_STUN = [
+    'stun:stun.l.google.com:19302',
+    'stun:stun.cloudflare.com:3478',
+]
 
 
-def create_consultation_room(appointment_ref: str) -> dict:
+def get_ice_servers() -> list:
+    servers = [{'urls': DEFAULT_STUN}]
+    turn_urls = [u.strip() for u in os.getenv('TURN_URLS', '').split(',') if u.strip()]
+    if turn_urls:
+        servers.append({
+            'urls': turn_urls,
+            'username': os.getenv('TURN_USERNAME', '').strip(),
+            'credential': os.getenv('TURN_CREDENTIAL', '').strip(),
+        })
+    return servers
+
+
+def create_consultation_room(appointment) -> dict:
+    """Return the room address for a remote appointment.
+
+    Nothing is created on any outside service: the room "exists" as soon as
+    the appointment is confirmed, and only the appointment's patient and
+    doctor are allowed into it. Must be called inside a request.
     """
-    Create a Daily.co video room for a consultation.
-    Returns: {room_url, name, simulation}
-    """
-    if _simulation():
-        # No DAILY_API_KEY set: this link will NOT open a real room.
-        room_name = f'medlink-{appointment_ref.lower()}'
-        return {
-            'room_url': f'https://medlink-demo.daily.co/{room_name}',
-            'name': room_name,
-            'simulation': True,
-            'note': 'Demo mode — sign up at daily.co and set DAILY_API_KEY for private rooms.',
-        }
-
-    room_name = f'medlink-{appointment_ref.lower()}-{uuid.uuid4().hex[:6]}'
-    payload = json.dumps({
-        'name': room_name,
-        'privacy': 'public',
-        'properties': {
-            'exp': int(__import__('time').time()) + 86400, # 24h expiry
-            'max_participants': 2,
-            'enable_recording': False,
-        },
-    }).encode()
-    req = urllib.request.Request(
-        DAILY_BASE + '/rooms',
-        data=payload,
-        headers={'Content-Type': 'application/json',
-                 'Authorization': f'Bearer {_key()}'},
-        method='POST',
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=10) as r:
-            data = json.loads(r.read())
-            return {
-                'room_url': data.get('url', ''),
-                'name': room_name,
-                'simulation': False,
-            }
-    except Exception as e:
-        return {'room_url': '', 'name': '', 'simulation': False, 'error': str(e)}
-
-
-def create_patient_token(room_name: str, patient_name: str) -> str:
-    """Create a short-lived Daily.co token for the patient."""
-    if _simulation():
-        return ''
-    payload = json.dumps({
-        'properties': {
-            'room_name': room_name,
-            'is_owner': False,
-            'user_name': patient_name,
-            'exp': int(__import__('time').time()) + 7200,
-        }
-    }).encode()
-    req = urllib.request.Request(
-        DAILY_BASE + '/meeting-tokens',
-        data=payload,
-        headers={'Content-Type': 'application/json',
-                 'Authorization': f'Bearer {_key()}'},
-        method='POST',
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=10) as r:
-            return json.loads(r.read()).get('token', '')
-    except Exception:
-        return ''
+    return {
+        'room_url': url_for('telemedicine.video_room', appt_id=appointment.id),
+        'name': f'medlink-{appointment.reference.lower()}',
+        'simulation': False,
+    }

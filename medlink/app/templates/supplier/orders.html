@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Incoming Orders — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Incoming Orders</h1>
+    <p class="page-subtitle">Orders placed by facilities to {{ facility.name }}</p>
+  </div>
+  <a href="{{ url_for('supplier.catalogue') }}" class="btn btn-secondary">My Catalogue</a>
+</div>
+
+{% if orders %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Order No.</th><th>From Facility</th><th>Items</th><th>Total (UGX)</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td style="font-weight:500;">{{ o.order_number }}</td>
+          <td>{{ o.buyer.name if o.buyer else '—' }}</td>
+          <td>{{ o.items|length }} lines</td>
+          <td style="font-weight:500;">{{ '{:,.0f}'.format(o.total_amount) }}</td>
+          <td><span class="badge badge-{{ o.status }}">{{ o.status.title() }}</span></td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ o.created_at.strftime('%d %b %Y') }}</td>
+          <td style="display:flex;gap:6px;">
+            <a href="{{ url_for('orders.detail', order_id=o.id) }}" class="btn btn-secondary btn-sm">View</a>
+            {% if o.status == 'pending' %}
+            <form method="POST" action="{{ url_for('supplier.confirm_order', order_id=o.id) }}">
+              <button type="submit" class="btn btn-success btn-sm">Confirm</button>
+            </form>
+            {% elif o.status == 'confirmed' %}
+            <form method="POST" action="{{ url_for('supplier.dispatch_order', order_id=o.id) }}">
+              <button type="submit" class="btn btn-primary btn-sm">Dispatch</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="empty-state card"><i class="ti ti-shopping-cart"></i><p>No incoming orders yet.</p></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Compose Message — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:640px;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">New Message</h1>
+    </div>
+    <a href="{{ url_for('messaging.inbox') }}" class="btn btn-secondary">Back to Inbox</a>
+  </div>
+  <div class="card">
+    <form method="POST">
+      <div class="form-group">
+        <label>To</label>
+        <select name="recipient_id" required>
+          <option value="">Select recipient...</option>
+          {% for u in candidates %}
+          <option value="{{ u.id }}"
+            {% if recipient and u.id == recipient.id %}selected{% endif %}>
+            {{ u.name }} — {{ u.role.replace('_',' ').title() }}
+            {% if u.facility %} ({{ u.facility.name }}){% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Message Type</label>
+        <select name="msg_type">
+          <option value="general" {% if prefill_type=='general' %}selected{% endif %}>General</option>
+          <option value="consultation" {% if prefill_type=='consultation' %}selected{% endif %}>Consultation Follow-up</option>
+          <option value="referral" {% if prefill_type=='referral' %}selected{% endif %}>Referral</option>
+          <option value="supplier_enquiry" {% if prefill_type=='supplier_enquiry' %}selected{% endif %}>Supplier Enquiry</option>
+          <option value="prescription_query" {% if prefill_type=='prescription_query' %}selected{% endif %}>Prescription Query</option>
+        </select>
+      </div>
+      {% if appt %}
+      <input type="hidden" name="appointment_id" value="{{ appt.id }}">
+      <div style="background:#f0f9ff;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;">
+        Linked to appointment: <strong>{{ appt.reference }}</strong>
+        {% if appt.patient %}— Patient: {{ appt.patient.name }}{% endif %}
+      </div>
+      {% endif %}
+      {% if order_obj %}
+      <input type="hidden" name="order_id" value="{{ order_obj.id }}">
+      <div style="background:#f0fdf4;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;">
+        Linked to order: <strong>{{ order_obj.order_number }}</strong>
+      </div>
+      {% endif %}
+      <div class="form-group">
+        <label>Subject</label>
+        <input name="subject" placeholder="Subject...">
+      </div>
+      <div class="form-group">
+        <label>Message *</label>
+        <textarea name="body" required rows="6" placeholder="Write your message here..."></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary"><i class="ti ti-send"></i>Send Message</button>
+        <a href="{{ url_for('messaging.inbox') }}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

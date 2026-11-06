@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Add Staff Member — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:620px;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Add Staff Member</h1>
+      <p class="page-subtitle">
+        {% if facility %}Adding to {{ facility.name }}{% else %}Select facility below{% endif %}
+      </p>
+    </div>
+    <a href="{{ url_for('admin.facility_staff') }}" class="btn btn-secondary">Back</a>
+  </div>
+
+  <div class="card">
+    <form method="POST">
+      {% if facilities %}
+      <div class="form-group">
+        <label>Facility *</label>
+        <select name="facility_id" required id="facSelect">
+          <option value="">Select facility...</option>
+          {% for f in facilities %}
+          <option value="{{ f.id }}" {% if selected_fid == f.id %}selected{% endif %}>{{ f.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% elif facility %}
+      <input type="hidden" name="facility_id" value="{{ facility.id }}">
+      <div style="background:var(--primary-light);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;">
+        <i class="ti ti-building-hospital"></i>Facility: <strong>{{ facility.name }}</strong>
+      </div>
+      {% endif %}
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input name="name" required placeholder="e.g. Dr. Sarah Nakato">
+        </div>
+        <div class="form-group">
+          <label>Role *</label>
+          <select name="role" id="roleSelect" onchange="toggleDoctorFields()">
+            {% for value, label in STAFF_ROLES %}
+            <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Email Address *</label>
+          <input name="email" type="email" required placeholder="staff@facility.ug">
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input name="phone" type="tel" placeholder="+256700000000">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Temporary Password *</label>
+        <input name="password" type="password" required minlength="6"
+               placeholder="Minimum 6 characters — staff should change on first login">
+        <div class="form-hint">The staff member should change this password after their first login.</div>
+      </div>
+
+      <!-- Doctor-specific fields — shown only when role = doctor -->
+      <div id="doctorFields" style="display:none;border-top:1px solid var(--border);padding-top:16px;margin-top:8px;">
+        <div class="section-title">Doctor Information</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>UMDPC Licence Number</label>
+            <input name="umdpc_number" placeholder="e.g. UMDPC/2021/12345">
+            <div class="form-hint">Will be submitted for platform verification separately.</div>
+          </div>
+          <div class="form-group">
+            <label>Specialisation</label>
+            <select name="specialisation">
+              <option value="">General Practice</option>
+              <option>Paediatrics</option>
+              <option>Obstetrics &amp; Gynaecology</option>
+              <option>Internal Medicine</option>
+              <option>Surgery</option>
+              <option>Dermatology</option>
+              <option>Psychiatry &amp; Mental Health</option>
+              <option>HIV/AIDS &amp; Infectious Disease</option>
+              <option>Ophthalmology</option>
+              <option>Cardiology</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+          <i class="ti ti-user-plus"></i>Add Staff Member
+        </button>
+        <a href="{{ url_for('admin.facility_staff') }}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function toggleDoctorFields() {
+  const role = document.getElementById('roleSelect').value;
+  document.getElementById('doctorFields').style.display = role === 'doctor' ? 'block' : 'none';
+}
+toggleDoctorFields();
+</script>
+{% endblock %}

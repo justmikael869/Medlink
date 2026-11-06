@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Video consultation {{ appt.reference }} — MedLink{% endblock %}
+
+{% block head %}
+<style>
+  .vr-wrap{display:grid;grid-template-columns:1fr;gap:14px}
+  @media(min-width:1000px){.vr-wrap.chat-open{grid-template-columns:1fr 320px}}
+  .vr-stage{position:relative;background:#0b1220;border-radius:12px;overflow:hidden;aspect-ratio:16/9;max-height:68vh;width:100%}
+  .vr-remote{width:100%;height:100%;object-fit:contain;background:#0b1220;display:block}
+  .vr-avatar{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#cbd5e1;font-size:14px;text-align:center;padding:20px}
+  .vr-avatar .initial{width:84px;height:84px;border-radius:50%;background:#1e3a5f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700}
+  .vr-label{position:absolute;left:12px;bottom:12px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:4px 10px;border-radius:999px;display:flex;gap:6px;align-items:center}
+  .vr-local{position:absolute;right:12px;bottom:12px;width:24%;min-width:110px;max-width:220px;aspect-ratio:4/3;background:#111827;border-radius:10px;overflow:hidden;border:2px solid rgba(255,255,255,.25)}
+  .vr-local video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block}
+  .vr-local.sharing video{transform:none}
+  .vr-local .off{position:absolute;inset:0;display:none;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;background:#111827}
+  .vr-status{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(15,23,42,.8);color:#e2e8f0;font-size:12px;padding:5px 12px;border-radius:999px;max-width:90%;text-align:center}
+  .vr-controls{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .vr-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:#fff;color:var(--text,#111827);padding:9px 14px;border-radius:999px;font-size:13px;cursor:pointer}
+  .vr-btn:hover{background:var(--primary-light)}
+  .vr-btn.off{background:#fee2e2;border-color:#fecaca;color:#991b1b}
+  .vr-btn.on{background:var(--primary-light);border-color:var(--primary);color:var(--primary)}
+  .vr-btn.hangup{background:#dc2626;border-color:#dc2626;color:#fff}
+  .vr-btn.hangup:hover{background:#b91c1c}
+  .vr-chat{display:none;flex-direction:column;border:1px solid var(--border);border-radius:12px;background:#fff;height:min(68vh,520px)}
+  .vr-wrap.chat-open .vr-chat{display:flex}
+  .vr-chat h3{margin:0;padding:12px 14px;font-size:14px;border-bottom:1px solid var(--border)}
+  .vr-msgs{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-size:13px}
+  .vr-msg .who{font-size:11px;color:var(--text-muted)}
+  .vr-msg.mine{align-self:flex-end;text-align:right}
+  .vr-msg .bubble{display:inline-block;background:#f1f5f9;padding:6px 10px;border-radius:10px;max-width:100%;word-wrap:break-word;text-align:left}
+  .vr-msg.mine .bubble{background:var(--primary-light)}
+  .vr-chat form{display:flex;gap:6px;padding:10px;border-top:1px solid var(--border)}
+  .vr-chat input{flex:1;min-width:0}
+  .vr-badge{background:#dc2626;color:#fff;border-radius:999px;font-size:10px;padding:1px 6px;display:none}
+  .vr-note{font-size:12px;color:var(--text-muted);text-align:center;margin-top:10px}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title"><i class="ti ti-video" style="color:var(--primary);margin-right:6px;"></i>Video consultation</h1>
+    <p class="page-subtitle">
+      {{ appt.reference }} ·
+      {% if is_doctor %}Patient: {{ appt.patient.name }}{% else %}{% if appt.doctor %}Dr. {{ appt.doctor.name }}{% else %}Your doctor{% endif %}{% endif %}
+    </p>
+  </div>
+  <a href="{{ url_for('telemedicine.appointment_detail', appt_id=appt.id) }}" class="btn btn-secondary">Back to appointment</a>
+</div>
+
+<div class="vr-wrap" id="vr-wrap">
+  <div>
+    <div class="vr-stage" id="vr-stage">
+      <video class="vr-remote" id="remote-video" autoplay playsinline style="display:none"></video>
+      <div class="vr-avatar" id="remote-placeholder">
+        <div class="initial" id="remote-initial">?</div>
+        <div id="remote-wait">Waiting for the other person to join…</div>
+      </div>
+      <div class="vr-status" id="vr-status">Starting camera…</div>
+      <div class="vr-label" id="remote-label" style="display:none"><span id="remote-name"></span><i class="ti ti-microphone-off" id="remote-muted" style="display:none"></i></div>
+      <div class="vr-local" id="local-box">
+        <video id="local-video" autoplay playsinline muted></video>
+        <div class="off" id="local-off">Camera off</div>
+      </div>
+    </div>
+
+    <div class="vr-controls">
+      <button class="vr-btn" id="btn-mic" type="button"><i class="ti ti-microphone"></i><span>Mute</span></button>
+      <button class="vr-btn" id="btn-cam" type="button"><i class="ti ti-video"></i><span>Stop video</span></button>
+      <button class="vr-btn" id="btn-share" type="button" style="display:none"><i class="ti ti-screen-share"></i><span>Share screen</span></button>
+      <button class="vr-btn" id="btn-chat" type="button"><i class="ti ti-message"></i><span>Chat</span><span class="vr-badge" id="chat-unread">0</span></button>
+      <button class="vr-btn hangup" id="btn-hangup" type="button"><i class="ti ti-phone-off"></i><span>Leave call</span></button>
+    </div>
+    <p class="vr-note">Your video goes directly to the other person's device. Leaving the call does not complete the appointment.</p>
+  </div>
+
+  <div class="vr-chat" id="vr-chat">
+    <h3>Chat</h3>
+    <div class="vr-msgs" id="vr-msgs"></div>
+    <form id="vr-chat-form">
+      <input type="text" id="vr-chat-input" class="form-control" placeholder="Type a message…" maxlength="2000" autocomplete="off">
+      <button type="submit" class="btn btn-primary btn-sm">Send</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  window.VIDEO_CONFIG = {
+    apptId: {{ appt.id|tojson }},
+    isDoctor: {{ is_doctor|tojson }},
+    myName: {{ current_user.name|tojson }},
+    otherName: {{ (appt.patient.name if is_doctor else ('Dr. ' ~ appt.doctor.name if appt.doctor else 'Doctor'))|tojson }},
+    iceServers: {{ ice_servers|tojson }},
+    backUrl: {{ url_for('telemedicine.appointment_detail', appt_id=appt.id)|tojson }}
+  };
+</script>
+<script src="{{ url_for('static', filename='js/medlink_video.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Book Appointment — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:560px;margin:0 auto;">
+  <h1 class="page-title" style="margin-bottom:4px;">Book with Dr {{ doctor.name }}</h1>
+  <p style="color:#6b7280;font-size:13px;margin-bottom:20px;">{{ doctor.specialisation or 'General Practice' }} · UGX {{ '{:,.0f}'.format(doctor.consultation_fee_ugx or 0) }}</p>
+
+  {% if not current_user.is_authenticated %}
+  <div class="alert alert-info">Please <a href="{{ url_for('auth.login') }}">sign in</a>or <a href="{{ url_for('auth.register') }}">register</a>to book an appointment.</div>
+  {% else %}
+  <div class="card">
+    <form method="POST">
+      <div class="form-group">
+        <label>Consultation type</label>
+        <div style="display:flex;gap:10px;">
+          <label class="checkbox-label" style="flex:1;padding:12px;border:1px solid #e5e7eb;border-radius:8px;">
+            <input type="radio" name="appt_type" value="remote" checked>Remote (video/chat)
+          </label>
+          <label class="checkbox-label" style="flex:1;padding:12px;border:1px solid #e5e7eb;border-radius:8px;">
+            <input type="radio" name="appt_type" value="in_person">In-person
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Preferred date & time</label>
+        <select name="slot_time">
+          <option value="">— Select a slot —</option>
+          {% for slot in slots %}
+          <option value="{{ slot.strftime('%Y-%m-%dT%H:%M') }}">
+            {{ slot.strftime('%A, %d %b %Y at %H:%M') }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Notes / symptoms (optional)</label>
+        <textarea name="notes" placeholder="Brief description of why you're booking..." rows="3"></textarea>
+      </div>
+      <div style="background:#f0fdf4;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;">
+         <strong>Consultation fee: UGX {{ '{:,.0f}'.format(doctor.consultation_fee_ugx or 0) }}</strong><br>
+        <span style="color:#6b7280;">Payment is held in escrow and released to the doctor only after you confirm the consultation is complete.</span>
+      </div>
+      <div style="background:#fef9c3;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;">
+         Your wallet balance: <strong>UGX {{ '{:,.0f}'.format(current_user.wallet_balance_ugx or 0) }}</strong>
+        {% if (current_user.wallet_balance_ugx or 0) < (doctor.consultation_fee_ugx or 0) %}
+        <br><span style="color:#dc2626;">Insufficient balance. <a href="{{ url_for('telemedicine.wallet') }}">Top up your wallet</a></span>
+        {% endif %}
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Confirm Booking</button>
+        <a href="{{ url_for('telemedicine.doctor_list') }}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

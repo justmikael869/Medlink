@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}Distributor Dashboard — MedLink{% endblock %}
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ facility.name }}</h1>
+    <p class="page-subtitle">
+      {{ facility.facility_type.replace('_',' ').title() }}
+      {% if facility.supplier_type %} · {{ facility.supplier_type.title() }} Distributor{% endif %}
+      {% if facility.district %} · {{ facility.district.name }}{% endif %}
+    </p>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <a href="{{ url_for('supplier.request_transport') }}" class="btn btn-primary">
+      <i class="ti ti-truck-delivery"></i>Request Transport
+    </a>
+    <a href="{{ url_for('supplier.catalogue') }}" class="btn btn-secondary">
+      <i class="ti ti-package"></i>My Catalogue
+    </a>
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">Pending Orders</div>
+    <div class="stat-value {{ 'orange' if pending_orders else 'green' }}">{{ pending_orders }}</div>
+    <div class="stat-sub">awaiting confirmation</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Confirmed</div>
+    <div class="stat-value blue">{{ confirmed_orders }}</div>
+    <div class="stat-sub">ready to dispatch</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Dispatched</div>
+    <div class="stat-value green">{{ dispatched }}</div>
+    <div class="stat-sub">in transit</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Orders</div>
+    <div class="stat-value blue">{{ total_orders }}</div>
+    <div class="stat-sub">all time</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Revenue (UGX)</div>
+    <div class="stat-value green">{{ '{:,.0f}'.format(revenue) }}</div>
+    <div class="stat-sub">confirmed + dispatched</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Catalogue</div>
+    <div class="stat-value blue">{{ in_stock_count }}<span style="font-size:14px;color:var(--text-muted);">/{{ catalogue_count }}</span></div>
+    <div class="stat-sub">medicines in stock</div>
+  </div>
+</div>
+
+<!-- Charts row -->
+<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Orders & Revenue — Last 7 Days</span></div>
+    <div class="card-body" style="padding:1rem;">
+      <canvas id="orderTrendChart" height="120"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Order Status</span></div>
+    <div class="card-body" style="display:flex;align-items:center;justify-content:center;padding:1rem;">
+      <canvas id="orderStatusChart" height="150" style="max-width:190px;"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Catalogue Stock</span></div>
+    <div class="card-body" style="display:flex;align-items:center;justify-content:center;padding:1rem;">
+      <canvas id="catalogueChart" height="150" style="max-width:190px;"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Recent orders -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Recent Orders</span>
+      <a href="{{ url_for('supplier.orders') }}" class="btn btn-secondary btn-sm">View all</a>
+    </div>
+    {% if recent_orders %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Order No.</th><th>From</th><th>Amount (UGX)</th><th>Status</th><th>Date</th></tr>
+        </thead>
+        <tbody>
+          {% for o in recent_orders %}
+          <tr>
+            <td style="font-weight:500;">
+              <a href="{{ url_for('orders.detail', order_id=o.id) }}"
+                 style="color:var(--primary);">{{ o.order_number }}</a>
+            </td>
+            <td style="font-size:12px;">{{ o.buyer.name if o.buyer else '—' }}</td>
+            <td>{{ '{:,.0f}'.format(o.total_amount) }}</td>
+            <td><span class="badge badge-{{ o.status }}">{{ o.status.title() }}</span></td>
+            <td style="font-size:12px;color:var(--text-muted);">
+              {{ o.created_at.strftime('%d %b %Y') }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:24px;">
+      <i class="ti ti-shopping-cart"></i>
+      <p>No orders yet. Facilities will find you through the supplier catalogue.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Delivery companies -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Delivery Partners</span>
+      <a href="{{ url_for('supplier.transport_history') }}" class="btn btn-secondary btn-sm">
+        Transport history
+      </a>
+    </div>
+    {% if delivery_cos %}
+    {% for co in delivery_cos %}
+    <div style="display:flex;justify-content:space-between;align-items:center;
+                padding:11px 0;border-bottom:1px solid #f3f4f6;">
+      <div>
+        <div style="font-size:13px;font-weight:500;">{{ co.name }}</div>
+        <div style="font-size:12px;color:var(--text-muted);">
+          {{ co.contact_phone or '' }}
+          {% if co.contact_email %} · {{ co.contact_email }}{% endif %}
+        </div>
+        <div style="display:flex;gap:6px;margin-top:4px;">
+          <span class="badge badge-success">Verified Partner</span>
+          {% if co.drivers|length >0 %}
+          <span class="badge badge-info">{{ co.drivers|length }} driver{{ 's' if co.drivers|length != 1 }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <a href="{{ url_for('delivery.company_detail', company_id=co.id) }}"
+           class="btn btn-secondary btn-sm">View</a>
+        <a href="{{ url_for('supplier.request_transport') }}?company={{ co.id }}"
+           class="btn btn-primary btn-sm">
+          <i class="ti ti-truck-delivery"></i>Request
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state" style="padding:24px;">
+      <i class="ti ti-truck-delivery"></i>
+      <p>No verified delivery companies yet.</p>
+      <a href="{{ url_for('delivery.register_company') }}" class="btn btn-primary btn-sm">
+        Register a Company
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if confirmed_orders >0 %}
+<div class="card" style="margin-top:16px;border-left:3px solid var(--warning);">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <div style="font-weight:600;font-size:14px;">
+        {{ confirmed_orders }} confirmed order{{ 's' if confirmed_orders != 1 }} ready to dispatch
+      </div>
+      <div style="font-size:13px;color:var(--text-muted);margin-top:3px;">
+        These orders are confirmed. Contact a delivery company to arrange transport.
+      </div>
+    </div>
+    <a href="{{ url_for('supplier.request_transport') }}" class="btn btn-primary">
+      <i class="ti ti-truck-delivery"></i>Arrange Transport
+    </a>
+  </div>
+</div>
+{% endif %}
+
+<script>
+Chart.defaults.font.family = 'Inter, sans-serif';
+var L7 = {{ labels_7|safe }};
+var oTrend = {{ order_trend|safe }};
+var rTrend = {{ rev_trend|safe }};
+var oStatus = {{ order_status_data|safe }};
+
+new Chart(document.getElementById('orderTrendChart'),{
+  type:'bar',
+  data:{
+    labels:L7,
+    datasets:[
+      {label:'Orders',data:oTrend,backgroundColor:'rgba(59,130,246,0.75)',borderRadius:4,yAxisID:'y'},
+      {label:'Revenue (UGX)',data:rTrend,type:'line',borderColor:'#16a34a',backgroundColor:'transparent',tension:0.4,pointRadius:3,yAxisID:'y1'}
+    ]
+  },
+  options:{
+    plugins:{legend:{position:'top'}},
+    scales:{
+      y:{beginAtZero:true,ticks:{stepSize:1},title:{display:true,text:'Orders'}},
+      y1:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},ticks:{callback:function(v){return 'UGX '+v.toLocaleString();}}}
+    }
+  }
+});
+
+new Chart(document.getElementById('orderStatusChart'),{
+  type:'doughnut',
+  data:{labels:Object.keys(oStatus),datasets:[{data:Object.values(oStatus),backgroundColor:['#f59e0b','#3b82f6','#8b5cf6','#16a34a']}]},
+  options:{plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}}},cutout:'60%'}
+});
+
+new Chart(document.getElementById('catalogueChart'),{
+  type:'doughnut',
+  data:{labels:['In Stock','Out of Stock'],datasets:[{data:[{{ in_stock_count }},{{ out_stock_count }}],backgroundColor:['#16a34a','#ef4444']}]},
+  options:{plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}}},cutout:'60%'}
+});
+</script>
+{% endblock %}

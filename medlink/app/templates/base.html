@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}MedLink Uganda{% endblock %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+{% if current_user.is_authenticated %}
+
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      MedLink Uganda
+      <span>Healthcare Ecosystem</span>
+    </div>
+    <nav class="sidebar-nav">
+
+      {% if current_user.role == 'patient' %}
+        <div class="nav-group">Overview</div>
+        <a href="{{ url_for('dashboard.index') }}" class="nav-item {% if request.endpoint=='dashboard.index' %}active{% endif %}"><i class="ti ti-layout-dashboard"></i>Dashboard</a>
+        <a href="{{ url_for('telemedicine.wallet') }}" class="nav-item {% if request.endpoint=='telemedicine.wallet' %}active{% endif %}"><i class="ti ti-wallet"></i>Health Wallet</a>
+        <div class="nav-group">Find Care</div>
+        <a href="{{ url_for('telemedicine.triage') }}" class="nav-item {% if request.endpoint=='telemedicine.triage' %}active{% endif %}"><i class="ti ti-stethoscope"></i>Symptom Check</a>
+        <a href="{{ url_for('search.index') }}" class="nav-item {% if 'search' in (request.endpoint or '') %}active{% endif %}"><i class="ti ti-pill"></i>Find Medicine</a>
+        <a href="{{ url_for('telemedicine.doctor_list') }}" class="nav-item {% if request.endpoint in ('telemedicine.doctor_list','telemedicine.book_doctor','telemedicine.book') %}active{% endif %}"><i class="ti ti-user-md"></i>Consult a Doctor</a>
+        <a href="{{ url_for('telemedicine.institution_list') }}" class="nav-item {% if request.endpoint in ('telemedicine.institution_list','telemedicine.book_institution') %}active{% endif %}"><i class="ti ti-building-hospital"></i>Book Hospital</a>
+        <div class="nav-group">Health Services</div>
+        <a href="{{ url_for('verify.index') }}" class="nav-item {% if 'verify' in (request.endpoint or '') %}active{% endif %}">
+          <i class="ti ti-shield-check"></i>Verify Medicine
+        </a>
+        <a href="{{ url_for('blood.index') }}" class="nav-item {% if 'blood' in (request.endpoint or '') %}active{% endif %}">
+          <i class="ti ti-droplet"></i>Blood Bank
+        </a>
+        <a href="{{ url_for('vaccination.index') }}" class="nav-item {% if 'vaccination' in (request.endpoint or '') %}active{% endif %}">
+          <i class="ti ti-vaccine"></i>Vaccination
+        </a>
+        <a href="{{ url_for('hiv.index') }}" class="nav-item {% if 'hiv' in (request.endpoint or '') %}active{% endif %}">
+          <i class="ti ti-ribbon"></i>HIV Care
+        </a>
+        <a href="{{ url_for('maternal.index') if current_user.is_authenticated else url_for('maternal.register') }}" class="nav-item {% if 'maternal' in (request.endpoint or '') %}active{% endif %}">
+          <i class="ti ti-heart-handshake"></i>Maternal Health
+        </a>
+        <a href="{{ url_for('mentalhealth.index') }}" class="nav-item {% if 'mentalhealth' in (request.endpoint or '') %}active{% endif %}">
+          <i class="ti ti-brain"></i>Mental Health
+        </a>
+        <div class="nav-group">My Records</div>
+        <a href="{{ url_for('telemedicine.health_record') }}" class="nav-item {% if request.endpoint=='telemedicine.health_record' %}active{% endif %}"><i class="ti ti-heart-rate-monitor"></i>Health Record</a>
+        <a href="{{ url_for('telemedicine.my_appointments') }}" class="nav-item {% if 'appointment' in (request.endpoint or '') %}active{% endif %}"><i class="ti ti-calendar"></i>My Appointments</a>
+        <a href="{{ url_for('telemedicine.my_prescriptions') }}" class="nav-item {% if request.endpoint=='telemedicine.my_prescriptions' %}active{% endif %}"><i class="ti ti-prescription"></i>My Prescriptions</a>
+        <a href="{{ url_for('delivery.my_deliveries') }}" class="nav-item {% if request.endpoint=='delivery.my_deliveries' %}active{% endif %}"><i class="ti ti-truck-delivery"></i>My Deliveries</a>
+        <a href="{{ url_for('messaging.inbox') }}" class="nav-item {% if 'messaging' in (request.endpoint or '') %}active{% endif %}">
+          <i class="ti ti-mail"></i>Messages
+          {% if unread_messages >0 %}<span class="nav-badge">{{ unread_messages }}</span>{% endif %}
+        </a>
+
+      {% elif current_user.role == 'doctor' %}
+        <div class="nav-group">Overview</div>
+        <a href="{{ url_for('dashboard.index') }}" class="nav-item {% if request.endpoint=='dashboard.index' %}active{% endif %}"><i class="ti ti-layout-dashboard"></i>Dashboard</a>
+        <a href="{{ url_for('telemedicine.wallet') }}" class="nav-item {% if request.endpoint=='telemedicine.wallet' %}active{% endif %}"><i class="ti ti-wallet"></i>My Wallet</a>
+        <div class="nav-group">Consultations</div>
+        <a href="{{ url_for('telemedicine.my_appointments') }}" class="nav-item {% if 'appointment' in (request.endpoint or '') %}active{% endif %}">
+          <i class="ti ti-calendar"></i>My Patients
+          {% if pending_appt_count >0 %}<span class="nav-badge">{{ pending_appt_count }}</span>{% endif %}
+        </a>
+        <a href="{{ url_for('telemedicine.consultation_history') }}" class="nav-item {% if request.endpoint=='telemedicine.consultation_history' %}active{% endif %}"><i class="ti ti-notes-medical"></i>History</a>
+        <a href="{{ url_for('inventory.medicine_availability') }}" class="nav-item {% if request.endpoint=='inventory.medicine_availability' %}active{% endif %}"><i class="ti ti-pill"></i>Medicine Availability</a>
+        <a href="{{ url_for('inventory.dispensing_counter') }}" class="nav-item {% if request.endpoint=='inventory.dispensing_counter' %}active{% endif %}"><i class="ti ti-receipt"></i>Dispensing Counter</a>
+        <a href="{{ url_for('admin.propose_medicine') }}" class="nav-item {% if request.endpoint=='admin.propose_medicine' %}active{% endif %}"><i class="ti ti-circle-plus"></i>Propose Medicine</a>
+        <a href="{{ url_for('messaging.inbox') }}" class="nav-item {% if 'messaging' in (request.endpoint or '') %}active{% endif %}">
+          <i class="ti ti-mail"></i>Messages
+          {% if unread_messages >0 %}<span class="nav-badge">{{ unread_messages }}</span>{% endif %}
+        </a>
+        <a href="{{ url_for('supplier.browse') }}" class="nav-item {% if request.endpoint=='supplier.browse' %}active{% endif %}"><i class="ti ti-building-warehouse"></i>Supplier Catalogue</a>
+        <div class="nav-group">Account</div>
+        <a href="{{ url_for('telemedicine.doctor_profile') }}" class="nav-item {% if request.endpoint=='telemedicine.doctor_profile' %}active{% endif %}"><i class="ti ti-user"></i>My Profile</a>
+
+      {% elif current_user.role == 'driver' %}
+        <div class="nav-group">Overview</div>
+        <a href="{{ url_for('dashboard.index') }}" class="nav-item {% if request.endpoint=='dashboard.index' %}active{% endif %}"><i class="ti ti-layout-dashboard"></i>Dashboard</a>
+        <a href="{{ url_for('telemedicine.wallet') }}" class="nav-item {% if request.endpoint=='telemedicine.wallet' %}active{% endif %}"><i class="ti ti-wallet"></i>My Earnings</a>
+        <div class="nav-group">Deliveries</div>
+        <a href="{{ url_for('delivery.driver_dashboard') }}" class="nav-item {% if request.endpoint=='delivery.driver_dashboard' %}active{% endif %}"><i class="ti ti-truck-delivery"></i>Active Orders</a>
+        <a href="{{ url_for('delivery.driver_history') }}" class="nav-item {% if request.endpoint=='delivery.driver_history' %}active{% endif %}"><i class="ti ti-history"></i>My History</a>
+        {% if current_user.delivery_company_id %}
+        <div class="nav-group">Company Management</div>
+        <a href="{{ url_for('delivery.company_dashboard') }}" class="nav-item {% if request.endpoint=='delivery.company_dashboard' %}active{% endif %}"><i class="ti ti-layout-dashboard"></i>Company Dashboard</a>
+        <a href="{{ url_for('delivery.company_drivers') }}" class="nav-item {% if request.endpoint=='delivery.company_drivers' %}active{% endif %}"><i class="ti ti-users"></i>Manage Drivers</a>
+        {% endif %}
+        <div class="nav-group">Communication</div>
+        <a href="{{ url_for('messaging.inbox') }}" class="nav-item {% if 'messaging' in (request.endpoint or '') %}active{% endif %}">
+          <i class="ti ti-mail"></i>Messages
+          {% if unread_messages >0 %}<span class="nav-badge">{{ unread_messages }}</span>{% endif %}
+        </a>
+        <a href="{{ url_for('delivery.company_list') }}" class="nav-item {% if request.endpoint in ('delivery.company_list','delivery.company_detail') %}active{% endif %}"><i class="ti ti-building"></i>Delivery Companies</a>
+
+      {% elif current_user.role == 'supplier' %}
+        <div class="nav-group">Overview</div>
+        <a href="{{ url_for('supplier.distributor_dashboard') }}" class="nav-item {% if request.endpoint=='supplier.distributor_dashboard' %}active{% endif %}"><i class="ti ti-layout-dashboard"></i>Dashboard</a>
+        <a href="{{ url_for('telemedicine.wallet') }}" class="nav-item {% if request.endpoint=='telemedicine.wallet' %}active{% endif %}"><i class="ti ti-wallet"></i>My Wallet</a>
+        <div class="nav-group">My Business</div>
+        <a href="{{ url_for('supplier.catalogue') }}" class="nav-item {% if request.endpoint in ('supplier.catalogue',) %}active{% endif %}"><i class="ti ti-package"></i>My Catalogue</a>
+        <a href="{{ url_for('admin.medicines') }}" class="nav-item {% if request.endpoint=='admin.medicines' %}active{% endif %}"><i class="ti ti-pill"></i>Medicine Catalogue</a>
+        <a href="{{ url_for('supplier.compare_prices') }}" class="nav-item {% if request.endpoint=='supplier.compare_prices' %}active{% endif %}"><i class="ti ti-chart-bar"></i>Compare Prices</a>
+        <a href="{{ url_for('admin.propose_medicine') }}" class="nav-item {% if request.endpoint=='admin.propose_medicine' %}active{% endif %}"><i class="ti ti-circle-plus"></i>Propose Medicine</a>
+        <a href="{{ url_for('supplier.orders') }}" class="nav-item {% if request.endpoint=='supplier.orders' %}active{% endif %}">
+          <i class="ti ti-shopping-cart"></i>Incoming Orders
+        </a>
+        <div class="nav-group">Transport</div>
+        <a href="{{ url_for('supplier.request_transport') }}" class="nav-item {% if request.endpoint=='supplier.request_transport' %}active{% endif %}"><i class="ti ti-truck-delivery"></i>Request Transport</a>
+        <a href="{{ url_for('supplier.transport_history') }}" class="nav-item {% if request.endpoint=='supplier.transport_history' %}active{% endif %}"><i class="ti ti-history"></i>Transport History</a>
+        <a href="{{ url_for('delivery.company_list') }}" class="nav-item {% if 'company' in (request.endpoint or '') %}active{% endif %}"><i class="ti ti-building"></i>Delivery Companies</a>
+        <div class="nav-group">Communication</div>
+        <a href="{{ url_for('messaging.inbox') }}" class="nav-item {% if 'messaging' in (request.endpoint or '') %}active{% endif %}">
+          <i class="ti ti-mail"></i>Messages
+          {% if unread_messages >0 %}<span class="nav-badge">{{ unread_messages }}</span>{% endif %}
+        </a>
+
+      {% elif current_user.role in ('staff', 'facility_admin') %}
+        <div class="nav-group">Overview</div>
+        <a href="{{ url_for('dashboard.index') }}" class="nav-item {% if request.endpoint=='dashboard.index' %}active{% endif %}"><i class="ti ti-layout-dashboard"></i>Dashboard</a>
+        <a href="{{ url_for('notifications.index') }}" class="nav-item {% if 'notifications' in (request.endpoint or '') %}active{% endif %}">
+          <i class="ti ti-bell"></i>Notifications
+          {% if unread_notifications >0 %}<span class="nav-badge">{{ unread_notifications }}</span>{% endif %}
+        </a>
+        <div class="nav-group">Inventory</div>
+        <a href="{{ url_for('inventory.index') }}" class="nav-item {% if request.endpoint=='inventory.index' %}active{% endif %}"><i class="ti ti-packages"></i>Stock Levels</a>
+        <a href="{{ url_for('inventory.dispensing_counter') }}" class="nav-item {% if request.endpoint=='inventory.dispensing_counter' %}active{% endif %}"><i class="ti ti-receipt"></i>Dispensing Counter</a>
+        <a href="{{ url_for('inventory.update') }}" class="nav-item {% if request.endpoint=='inventory.update' %}active{% endif %}"><i class="ti ti-edit"></i>Update Stock</a>
+        <a href="{{ url_for('alerts.index') }}" class="nav-item {% if 'alerts' in (request.endpoint or '') %}active{% endif %}"><i class="ti ti-alert-triangle"></i>Alerts</a>
+        <div class="nav-group">Supply Chain</div>
+        <a href="{{ url_for('orders.index') }}" class="nav-item {% if request.endpoint=='orders.index' %}active{% endif %}"><i class="ti ti-shopping-cart"></i>Orders</a>
+        <a href="{{ url_for('orders.new') }}" class="nav-item {% if request.endpoint=='orders.new' %}active{% endif %}"><i class="ti ti-plus"></i>New Order</a>
+        <div class="nav-group">Patients</div>
+        <a href="{{ url_for('telemedicine.my_appointments') }}" class="nav-item {% if 'appointment' in (request.endpoint or '') %}active{% endif %}"><i class="ti ti-calendar"></i>Appointments</a>
+        <a href="{{ url_for('telemedicine.checkin') }}" class="nav-item {% if request.endpoint=='telemedicine.checkin' %}active{% endif %}"><i class="ti ti-qrcode"></i>QR Check-in</a>
+        <div class="nav-group">Administration</div>
+        <a href="{{ url_for('admin.facility_staff') }}" class="nav-item {% if request.endpoint in ('admin.facility_staff','admin.add_staff','admin.edit_staff') %}active{% endif %}"><i class="ti ti-users"></i>Staff Management</a>
+        <div class="nav-group">Communication</div>
+        <a href="{{ url_for('messaging.inbox') }}" class="nav-item {% if 'messaging' in (request.endpoint or '') %}active{% endif %}">
+          <i class="ti ti-mail"></i>Messages
+          {% if unread_messages >0 %}<span class="nav-badge">{{ unread_messages }}</span>{% endif %}
+        </a>
+        <a href="{{ url_for('supplier.browse') }}" class="nav-item {% if request.endpoint in ('supplier.browse','supplier.place_order') %}active{% endif %}"><i class="ti ti-building-warehouse"></i>Order from Suppliers</a>
+        <a href="{{ url_for('supplier.compare_prices') }}" class="nav-item {% if request.endpoint=='supplier.compare_prices' %}active{% endif %}"><i class="ti ti-chart-bar"></i>Compare Prices</a>
+        <a href="{{ url_for('admin.medicines') }}" class="nav-item {% if request.endpoint in ('admin.medicines',) %}active{% endif %}"><i class="ti ti-pill"></i>Medicine Catalogue</a>
+        <a href="{{ url_for('admin.propose_medicine') }}" class="nav-item {% if request.endpoint=='admin.propose_medicine' %}active{% endif %}"><i class="ti ti-circle-plus"></i>Propose Medicine</a>
+
+      {% elif current_user.role == 'district_officer' %}
+        <div class="nav-group">Overview</div>
+        <a href="{{ url_for('dashboard.index') }}" class="nav-item {% if request.endpoint=='dashboard.index' %}active{% endif %}"><i class="ti ti-layout-dashboard"></i>Dashboard</a>
+        <a href="{{ url_for('notifications.index') }}" class="nav-item {% if 'notifications' in (request.endpoint or '') %}active{% endif %}">
+          <i class="ti ti-bell"></i>Notifications
+          {% if unread_notifications >0 %}<span class="nav-badge">{{ unread_notifications }}</span>{% endif %}
+        </a>
+        <div class="nav-group">District Intelligence</div>
+        <a href="{{ url_for('analytics.index') }}" class="nav-item {% if 'analytics' in (request.endpoint or '') %}active{% endif %}"><i class="ti ti-chart-bar"></i>Analytics</a>
+        <a href="{{ url_for('alerts.index') }}" class="nav-item {% if 'alerts' in (request.endpoint or '') %}active{% endif %}"><i class="ti ti-alert-triangle"></i>Alerts</a>
+        <a href="{{ url_for('search.gap_map') }}" class="nav-item {% if request.endpoint=='search.gap_map' %}active{% endif %}"><i class="ti ti-map-pin"></i>Shortage Map</a>
+        <div class="nav-group">Facilities</div>
+        <a href="{{ url_for('admin.facilities') }}" class="nav-item {% if request.endpoint=='admin.facilities' %}active{% endif %}"><i class="ti ti-building-hospital"></i>Facilities</a>
+
+      {% elif current_user.role == 'system_admin' %}
+        <div class="nav-group">Overview</div>
+        <a href="{{ url_for('dashboard.index') }}" class="nav-item {% if request.endpoint=='dashboard.index' %}active{% endif %}"><i class="ti ti-layout-dashboard"></i>Dashboard</a>
+        <a href="{{ url_for('notifications.index') }}" class="nav-item {% if 'notifications' in (request.endpoint or '') %}active{% endif %}">
+          <i class="ti ti-bell"></i>Notifications
+          {% if unread_notifications >0 %}<span class="nav-badge">{{ unread_notifications }}</span>{% endif %}
+        </a>
+        <div class="nav-group">Platform</div>
+        <a href="{{ url_for('analytics.index') }}" class="nav-item {% if 'analytics' in (request.endpoint or '') %}active{% endif %}"><i class="ti ti-chart-bar"></i>Analytics</a>
+        <a href="{{ url_for('payments.index') }}" class="nav-item {% if request.endpoint=='payments.index' %}active{% endif %}"><i class="ti ti-credit-card"></i>Payments</a>
+        <a href="{{ url_for('delivery.admin_view') }}" class="nav-item {% if request.endpoint=='delivery.admin_view' %}active{% endif %}"><i class="ti ti-truck-delivery"></i>Deliveries</a>
+        <a href="{{ url_for('search.gap_map') }}" class="nav-item {% if request.endpoint=='search.gap_map' %}active{% endif %}"><i class="ti ti-map-pin"></i>Shortage Map</a>
+        <div class="nav-group">Supply Chain</div>
+        <a href="{{ url_for('inventory.index') }}" class="nav-item {% if request.endpoint=='inventory.index' %}active{% endif %}"><i class="ti ti-packages"></i>Stock Overview</a>
+        <a href="{{ url_for('alerts.index') }}" class="nav-item {% if 'alerts' in (request.endpoint or '') %}active{% endif %}"><i class="ti ti-alert-triangle"></i>Alerts</a>
+        <a href="{{ url_for('orders.index') }}" class="nav-item {% if 'orders' in (request.endpoint or '') %}active{% endif %}"><i class="ti ti-shopping-cart"></i>Orders</a>
+        <div class="nav-group">Admin</div>
+        <a href="{{ url_for('admin.users') }}" class="nav-item {% if request.endpoint=='admin.users' %}active{% endif %}"><i class="ti ti-users"></i>Users</a>
+        <a href="{{ url_for('admin.facility_staff') }}" class="nav-item {% if request.endpoint in ('admin.facility_staff','admin.add_staff','admin.edit_staff') %}active{% endif %}"><i class="ti ti-users-group"></i>Staff Management</a>
+        <a href="{{ url_for('admin.facilities') }}" class="nav-item {% if request.endpoint=='admin.facilities' %}active{% endif %}"><i class="ti ti-building-hospital"></i>Facilities</a>
+        <a href="{{ url_for('admin.medicines') }}" class="nav-item {% if request.endpoint=='admin.medicines' %}active{% endif %}"><i class="ti ti-pill"></i>Medicines</a>
+        <a href="{{ url_for('admin.doctors') }}" class="nav-item {% if request.endpoint=='admin.doctors' %}active{% endif %}"><i class="ti ti-user-check"></i>Verify Doctors</a>
+        <a href="{{ url_for('admin.drivers') }}" class="nav-item {% if request.endpoint=='admin.drivers' %}active{% endif %}"><i class="ti ti-user-check"></i>Verify Drivers</a>
+        <a href="{{ url_for('admin.pending_registrations') }}" class="nav-item {% if request.endpoint=='admin.pending_registrations' %}active{% endif %}">
+          <i class="ti ti-clock-check"></i>Pending Registrations
+        </a>
+        <a href="{{ url_for('ussd.ussd_simulator') }}" class="nav-item {% if 'ussd' in (request.endpoint or '') %}active{% endif %}">
+          <i class="ti ti-device-mobile"></i>USSD Simulator
+        </a>
+        <a href="{{ url_for('payments.audit_log') }}" class="nav-item {% if request.endpoint=='payments.audit_log' %}active{% endif %}"><i class="ti ti-clipboard-list"></i>Audit Log</a>
+        <a href="{{ url_for('messaging.inbox') }}" class="nav-item {% if 'messaging' in (request.endpoint or '') %}active{% endif %}">
+          <i class="ti ti-mail"></i>Messages
+          {% if unread_messages >0 %}<span class="nav-badge">{{ unread_messages }}</span>{% endif %}
+        </a>
+      {% endif %}
+
+    </nav>
+    <div class="sidebar-foot">
+      <div class="name">{{ current_user.name }}</div>
+      <div class="role">{{ current_user.role.replace('_',' ').title() }}{% if current_user.facility %} · {{ current_user.facility.name[:20] }}{% endif %}</div>
+      <a href="{{ url_for('auth.logout') }}">Sign out</a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="flash-wrap">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}<div class="alert alert-{{ cat }}">{{ msg }}</div>{% endfor %}
+      {% endwith %}
+    </div>
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+{% else %}
+
+<header class="topbar">
+  <a href="{{ url_for('pages.landing') }}" class="topbar-logo">MedLink Uganda</a>
+  <nav class="topbar-nav">
+    <a href="{{ url_for('search.index') }}" class="topbar-link">Find Medicine</a>
+    <a href="{{ url_for('verify.index') }}" class="topbar-link {% if 'verify' in (request.endpoint or '') %}active{% endif %}">Verify Medicine</a>
+    <a href="{{ url_for('blood.index') }}" class="topbar-link {% if 'blood' in (request.endpoint or '') %}active{% endif %}">Blood Bank</a>
+    <a href="{{ url_for('telemedicine.doctor_list') }}" class="topbar-link">Doctors</a>
+    <a href="{{ url_for('mentalhealth.index') }}" class="topbar-link {% if 'mentalhealth' in (request.endpoint or '') %}active{% endif %}">Mental Health</a>
+    <a href="{{ url_for('telemedicine.institution_list') }}" class="topbar-link">Hospitals</a>
+    <a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-sm" style="margin-left:8px;">Sign in</a>
+    <a href="{{ url_for('auth.register_choose') }}" class="btn btn-primary btn-sm">Create Account</a>
+  </nav>
+</header>
+<div class="public-content">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}<div class="alert alert-{{ cat }}" style="margin-bottom:12px;">{{ msg }}</div>{% endfor %}
+  {% endwith %}
+  {% block public_content %}{% endblock %}
+</div>
+
+{% endif %}
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

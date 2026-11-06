@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Update Stock — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Update Inventory</h1>
+  <a href="{{ url_for('inventory.index') }}" class="btn btn-secondary">← Back</a>
+</div>
+{% if facility %}<p style="color:#6b7280;margin-bottom:16px;">Updating: <strong>{{ facility.name }}</strong></p>{% endif %}
+<form method="POST">
+  {% set current_cat = namespace(c='') %}
+  {% for med in medicines %}
+    {% if med.category != current_cat.c %}
+      {% if not loop.first %}</div>{% endif %}
+      {% set current_cat.c = med.category %}
+      <div class="card" style="margin-bottom:14px;">
+      <div class="card-header"><span class="card-title">{{ med.category }}</span></div>
+    {% endif %}
+    <div style="display:grid;grid-template-columns:2.5fr 1fr 1fr 1fr 1fr auto;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #f3f4f6;">
+      <div>
+        <strong style="font-size:13px;">{{ med.name }}</strong>
+        {% if med.critical %}<span style="color:#ef4444;font-size:11px;"></span>{% endif %}
+        <div style="font-size:11px;color:#9ca3af;">{{ med.dosage_form }} {{ med.strength }} · {{ med.unit }}</div>
+      </div>
+      <div>
+        <label style="font-size:10px;color:#6b7280;">Quantity</label>
+        <input type="number" name="qty_{{ med.id }}" min="0"
+          value="{{ existing[med.id].quantity if med.id in existing else '' }}" placeholder="0">
+      </div>
+      <div>
+        <label style="font-size:10px;color:#6b7280;">Price (UGX)</label>
+        <input type="number" name="price_{{ med.id }}" min="0"
+          value="{{ existing[med.id].unit_price if med.id in existing else '' }}" placeholder="0">
+      </div>
+      <div>
+        <label style="font-size:10px;color:#6b7280;">Min stock</label>
+        <input type="number" name="threshold_{{ med.id }}" min="0"
+          value="{{ existing[med.id].minimum_threshold if med.id in existing else 20 }}">
+      </div>
+      <div>
+        <label style="font-size:10px;color:#6b7280;">Expiry</label>
+        <input type="date" name="expiry_{{ med.id }}"
+          value="{{ existing[med.id].expiry_date.isoformat() if med.id in existing and existing[med.id].expiry_date else '' }}">
+      </div>
+      <div style="padding-top:16px;">
+        <label class="checkbox-label" style="font-size:11px;">
+          <input type="checkbox" name="avail_{{ med.id }}"
+            {% if med.id not in existing or existing[med.id].is_available %}checked{% endif %}>
+          Visible
+        </label>
+      </div>
+    </div>
+  {% endfor %}
+  </div>
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Save All Stock Levels</button>
+    <a href="{{ url_for('inventory.index') }}" class="btn btn-secondary">Cancel</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Symptom Assessment — MedLink{% endblock %}
+{% block public_content %}{% block content %}
+<div style="max-width:600px;margin:0 auto;">
+
+  {% set colors = {'emergency':'#fee2e2','high':'#fef3c7','medium':'#dbeafe','low':'#dcfce7'} %}
+  {% set text_c = {'emergency':'#991b1b','high':'#92400e','medium':'#1e40af','low':'#166534'} %}
+  {% set icons = {'emergency':'','high':'','medium':'','low':''} %}
+  {% set labels = {'emergency':'EMERGENCY','high':'HIGH PRIORITY','medium':'MODERATE','low':'LOW CONCERN'} %}
+
+  <!-- Severity banner -->
+  <div style="background:{{ colors[severity] }};border-radius:14px;padding:28px 24px;margin-bottom:20px;text-align:center;">
+    <div style="font-size:44px;margin-bottom:10px;">{{ icons[severity] }}</div>
+    <h2 style="font-size:21px;font-weight:700;color:{{ text_c[severity] }};margin-bottom:12px;">
+      {{ labels[severity] }}
+    </h2>
+    <p style="font-size:14px;line-height:1.7;color:{{ text_c[severity] }};max-width:440px;margin:0 auto;">
+      {{ recommendation }}
+    </p>
+    {% if ai_powered %}
+    <div style="margin-top:14px;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.6);border-radius:999px;padding:4px 12px;font-size:11px;color:{{ text_c[severity] }};font-weight:500;">
+      <i class="ti ti-stethoscope"></i>Clinical decision support assessment
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Red flags -->
+  {% if red_flags %}
+  <div class="card" style="margin-bottom:16px;border-left:4px solid #ef4444;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <i class="ti ti-alert-triangle" style="color:#ef4444;font-size:16px;"></i>
+      <span style="font-weight:600;font-size:14px;color:#991b1b;">Warning signs detected</span>
+    </div>
+    <ul style="margin:0;padding-left:18px;">
+      {% for flag in red_flags %}
+      <li style="font-size:13px;color:#7f1d1d;margin-bottom:4px;">{{ flag }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <!-- Home care advice -->
+  {% if home_care and severity in ('low','medium') %}
+  <div class="card" style="margin-bottom:16px;background:#f0fdf4;border:1px solid #bbf7d0;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <i class="ti ti-home-heart" style="color:#16a34a;font-size:16px;"></i>
+      <span style="font-weight:600;font-size:14px;color:#166534;">Home care advice</span>
+    </div>
+    <p style="font-size:13px;color:#15803d;margin:0;">{{ home_care }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Next steps -->
+  {% if severity != 'emergency' %}
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header">
+      <span class="card-title">Suggested next steps</span>
+    </div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+      Based on your symptoms, we suggest a <strong>{{ specialisation }}</strong>specialist.
+    </p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <a href="{{ url_for('telemedicine.doctor_list', spec=specialisation) }}" class="btn btn-primary">
+        <i class="ti ti-user-search"></i>Find a {{ specialisation }} doctor
+      </a>
+      <a href="{{ url_for('telemedicine.triage') }}" class="btn btn-secondary">
+        <i class="ti ti-refresh"></i>Re-assess
+      </a>
+    </div>
+  </div>
+  {% else %}
+  <div class="card" style="margin-bottom:16px;text-align:center;padding:20px;">
+    <div style="font-size:28px;margin-bottom:8px;color:#991b1b;"><i class="ti ti-emergency-bed"></i></div>
+    <p style="font-size:14px;font-weight:600;color:#991b1b;margin-bottom:6px;">Go to the nearest hospital immediately</p>
+    <p style="font-size:13px;color:var(--text-muted);">Emergency: <strong>999</strong>· Ambulance: <strong>0800 100 066</strong></p>
+  </div>
+  {% endif %}
+
+  <!-- Disclaimer -->
+  <div class="card" style="background:#f9fafb;">
+    <p style="font-size:12px;color:var(--text-muted);margin:0;">
+      <i class="ti ti-shield-check" style="margin-right:4px;"></i>
+      <strong>Important:</strong>This tool provides general guidance only. It is not a medical diagnosis.
+      Always consult a qualified doctor, especially if symptoms worsen or you have concerns.
+    </p>
+  </div>
+
+</div>
+{% endblock %}{% endblock %}

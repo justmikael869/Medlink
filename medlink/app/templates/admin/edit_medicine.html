@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ med.name }} — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:680px;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Edit Medicine</h1>
+      <p class="page-subtitle">{{ med.name }}</p>
+    </div>
+    <a href="{{ url_for('admin.medicines') }}" class="btn btn-secondary">Back</a>
+  </div>
+  <div class="card">
+    <form method="POST">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Medicine Name *</label>
+          <input name="name" value="{{ med.name }}" required>
+        </div>
+        <div class="form-group">
+          <label>Generic Name</label>
+          <input name="generic_name" value="{{ med.generic_name or '' }}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Brand Name</label>
+          <input name="brand_name" value="{{ med.brand_name or '' }}">
+        </div>
+        <div class="form-group">
+          <label>NDA Code</label>
+          <input name="nda_code" value="{{ med.nda_code or '' }}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Category</label>
+          <select name="category">
+            {% for cat in categories %}
+            <option value="{{ cat }}" {% if med.category == cat %}selected{% endif %}>{{ cat }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Dosage Form</label>
+          <select name="dosage_form">
+            {% for form in dosage_forms %}
+            <option value="{{ form }}" {% if med.dosage_form == form %}selected{% endif %}>{{ form }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Strength</label>
+          <input name="strength" value="{{ med.strength or '' }}">
+        </div>
+        <div class="form-group">
+          <label>Unit</label>
+          <input name="unit" value="{{ med.unit or '' }}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Diseases / Indications</label>
+        <input name="diseases" value="{{ med.diseases or '' }}">
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea name="description" rows="3">{{ med.description or '' }}</textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+        <label class="checkbox-label" style="padding:10px;border:1px solid var(--border);border-radius:8px;">
+          <input type="checkbox" name="prescription_required" {% if med.prescription_required %}checked{% endif %}>Prescription required
+        </label>
+        <label class="checkbox-label" style="padding:10px;border:1px solid var(--border);border-radius:8px;">
+          <input type="checkbox" name="requires_cold_chain" {% if med.requires_cold_chain %}checked{% endif %}>Cold chain required
+        </label>
+        <label class="checkbox-label" style="padding:10px;border:1px solid var(--border);border-radius:8px;">
+          <input type="checkbox" name="critical" {% if med.critical %}checked{% endif %}>Critical medicine
+        </label>
+        <label class="checkbox-label" style="padding:10px;border:1px solid var(--border);border-radius:8px;">
+          <input type="checkbox" name="who_essential" {% if med.who_essential %}checked{% endif %}>WHO Essential
+        </label>
+        <label class="checkbox-label" style="padding:10px;border:1px solid var(--border);border-radius:8px;">
+          <input type="checkbox" name="controlled_drug" {% if med.controlled_drug %}checked{% endif %}>Controlled drug
+        </label>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="{{ url_for('admin.medicines') }}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}ART Dashboard — MedLink{% endblock %}
+{% block public_content %}{% block content %}
+<div style="max-width:640px;margin:0 auto;">
+
+  <!-- Header card -->
+  <div style="background:linear-gradient(135deg,#1e3a5f,#1d9e75);border-radius:16px;padding:24px;color:#fff;margin-bottom:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-size:12px;opacity:.7;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">ART Care Dashboard</div>
+        <div style="font-size:16px;font-weight:600;">{{ profile.current_regimen or 'ART Treatment' }}</div>
+        <div style="font-size:12px;opacity:.8;margin-top:4px;">
+          {{ profile.facility.name if profile.facility else 'Clinic not set' }}
+          {% if profile.art_start_date %} · On ART since {{ profile.art_start_date.strftime('%b %Y') }}{% endif %}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;text-align:right;">
+        {% if profile.viral_load is not none %}
+        <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:8px 12px;">
+          <div style="font-size:10px;opacity:.7;">Viral Load</div>
+          <div style="font-size:16px;font-weight:700;">{{ '{:,.0f}'.format(profile.viral_load) }}</div>
+          <div style="font-size:9px;opacity:.6;">copies/mL</div>
+        </div>
+        {% endif %}
+        {% if profile.cd4_count %}
+        <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:8px 12px;">
+          <div style="font-size:10px;opacity:.7;">CD4 Count</div>
+          <div style="font-size:16px;font-weight:700;">{{ profile.cd4_count }}</div>
+          <div style="font-size:9px;opacity:.6;">cells/μL</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% if profile.on_tb_treatment %}
+    <div style="margin-top:10px;background:rgba(255,255,255,.15);border-radius:8px;padding:8px 12px;font-size:12px;">
+       Also on TB treatment — ensure no drug interactions with your doctor
+    </div>
+    {% endif %}
+    {% if profile.pregnant %}
+    <div style="margin-top:8px;background:rgba(255,255,255,.15);border-radius:8px;padding:8px 12px;font-size:12px;">
+       PMTCT — pregnant patient. Antenatal care is critical.
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Overdue alert -->
+  {% if overdue %}
+  <div class="card" style="margin-bottom:16px;border-left:4px solid #dc2626;background:#fef2f2;">
+    <div style="font-weight:600;color:#dc2626;margin-bottom:6px;font-size:14px;">Missed refill(s)</div>
+    {% for r in overdue %}
+    <div style="font-size:13px;margin-bottom:8px;">
+      Refill was due {{ r.due_date.strftime('%d %b %Y') }} ({{ (today - r.due_date).days }} days ago)
+      <form method="POST" action="{{ url_for('hiv.mark_collected', rid=r.id) }}" style="display:inline;margin-left:8px;">
+        <button type="submit" class="btn btn-sm" style="background:#dc2626;color:#fff;border-color:#dc2626;font-size:11px;">
+          Collected today 
+        </button>
+      </form>
+    </div>
+    {% endfor %}
+    <div style="font-size:12px;color:#991b1b;margin-top:4px;">
+      Please collect your medicines as soon as possible. Missing doses allows the virus to multiply.
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Next refill -->
+  {% if next_ref %}
+  {% set days = (next_ref.due_date - today).days %}
+  <div class="card" style="margin-bottom:16px;border-left:4px solid {% if days <= 3 %}#f97316{% else %}#3b82f6{% endif %};">
+    <div style="font-size:11px;color:{% if days<=3 %}#ea580c{% else %}#3b82f6{% endif %};font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">
+      {% if days <= 3 %} Refill due soon{% else %}Next refill{% endif %}
+    </div>
+    <div style="font-size:16px;font-weight:600;margin-bottom:4px;">{{ next_ref.due_date.strftime('%A, %d %B %Y') }}</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+      {% if days == 0 %}Due today
+      {% elif days == 1 %}Due tomorrow
+      {% elif days < 0 %}{{ -days }} days overdue
+      {% else %}In {{ days }} days{% endif %}
+      · {{ next_ref.days_supply }}-day supply
+      · {{ next_ref.facility.name if next_ref.facility else profile.facility.name if profile.facility else 'your clinic' }}
+    </div>
+    <form method="POST" action="{{ url_for('hiv.mark_collected', rid=next_ref.id) }}">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input type="text" name="notes" placeholder="Notes (optional)" style="flex:1;min-width:160px;">
+        <button type="submit" class="btn btn-primary">Mark as collected</button>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+
+  <!-- Update lab results -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header"><span class="card-title">Update lab results</span></div>
+    <form method="POST" action="{{ url_for('hiv.update_labs', profile_id=profile.id) }}">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label style="font-size:12px;">Viral load (copies/mL)</label>
+          <input type="number" name="viral_load" min="0" placeholder="e.g. 50" value="{{ profile.viral_load if profile.viral_load is not none else '' }}">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label style="font-size:12px;">CD4 count (cells/μL)</label>
+          <input type="number" name="cd4_count" min="0" placeholder="e.g. 650" value="{{ profile.cd4_count or '' }}">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label style="font-size:12px;">Test date</label>
+          <input type="date" name="test_date" value="{{ profile.viral_load_date.isoformat() if profile.viral_load_date else '' }}">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-secondary btn-sm" style="margin-top:10px;">Save results</button>
+    </form>
+    {% if profile.viral_load is not none %}
+    <div style="margin-top:12px;padding:10px;border-radius:8px;background:{% if profile.viral_load < 200 %}#f0fdf4{% elif profile.viral_load < 1000 %}#fffbeb{% else %}#fef2f2{% endif %};">
+      <div style="font-size:12px;font-weight:600;color:{% if profile.viral_load < 200 %}#16a34a{% elif profile.viral_load < 1000 %}#854d0e{% else %}#dc2626{% endif %};">
+        {% if profile.viral_load < 200 %} Undetectable — excellent! U=U (Undetectable = Untransmittable)
+        {% elif profile.viral_load < 1000 %} Low level viraemia — continue ART strictly, retest in 3 months
+        {% else %} Detectable viral load — please see your doctor urgently
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Refill history -->
+  {% if done %}
+  <div class="card">
+    <div class="card-header"><span class="card-title">Refill history</span></div>
+    {% for r in done | reverse %}
+    <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;{% if not loop.last %}border-bottom:0.5px solid var(--border);{% endif %}">
+      <span>{{ r.due_date.strftime('%d %b %Y') }}</span>
+      <span style="color:#16a34a;font-weight:500;">Collected {{ r.collected_date.strftime('%d %b %Y') if r.collected_date else '' }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}{% endblock %}

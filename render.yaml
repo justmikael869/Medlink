@@ -4,7 +4,7 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn run:app --workers 1 --threads 4 --timeout 120 --bind 0.0.0.0:$PORT
+    startCommand: gunicorn run:app --workers 1 --threads 32 --timeout 120 --bind 0.0.0.0:$PORT
     healthCheckPath: /
     autoDeploy: true
     envVars:
@@ -21,7 +21,11 @@ services:
       # Optional integrations - leave blank to run in demo mode
       - key: ANTHROPIC_API_KEY
         sync: false
-      - key: DAILY_API_KEY
+      - key: TURN_URLS
+        sync: false   # optional: only needed if calls fail on some mobile networks
+      - key: TURN_USERNAME
+        sync: false
+      - key: TURN_CREDENTIAL
         sync: false
       - key: AT_API_KEY
         sync: false

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ title }}</h1>
+    <p class="page-subtitle">{{ appts|length }} appointment(s)</p>
+  </div>
+  {% if current_user.role == 'patient' or current_user.role not in ('doctor','system_admin','district_officer','facility_admin','staff') %}
+  <a href="{{ url_for('telemedicine.doctor_list') }}" class="btn btn-primary">+ Book Appointment</a>
+  {% endif %}
+</div>
+
+{% if appts %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Reference</th>
+          <th>Patient</th>
+          <th>Doctor</th>
+          <th>Type</th>
+          <th>Slot</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in appts %}
+        <tr>
+          <td><strong>{{ a.reference }}</strong></td>
+          <td>{{ a.patient.name }}<br><small style="color:#9ca3af;">{{ a.patient.phone or '' }}</small></td>
+          <td>{{ ('Dr ' + a.doctor.name) if a.doctor else '—' }}</td>
+          <td>
+            {% if a.appt_type == 'remote' %}
+            <span class="badge badge-confirmed">Remote</span>
+            {% else %}
+            <span class="badge badge-pending">In-person</span>
+            {% endif %}
+          </td>
+          <td style="color:#6b7280;font-size:12px;">
+            {{ a.slot_time.strftime('%d %b %Y %H:%M') if a.slot_time else 'TBD' }}
+          </td>
+          <td>
+            <span class="badge badge-{{ a.status }}">{{ a.status.replace('_',' ').title() }}</span>
+          </td>
+          <td>
+            <a href="{{ url_for('telemedicine.appointment_detail', appt_id=a.id) }}"
+               class="btn btn-secondary btn-sm">View</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:40px;">
+  <div style="font-size:32px;margin-bottom:10px;color:#9ca3af;"><i class="ti ti-calendar-off"></i></div>
+  <p style="color:#6b7280;">No appointments yet.</p>
+  <a href="{{ url_for('telemedicine.doctor_list') }}" class="btn btn-primary" style="margin-top:12px;">Find a Doctor</a>
+</div>
+{% endif %}
+{% endblock %}

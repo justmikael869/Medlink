@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Staff Management — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Staff Management</h1>
+    <p class="page-subtitle">
+      {% if facility %}{{ facility.name }}{% else %}Select a facility{% endif %}
+      — {{ staff|length }} members
+    </p>
+  </div>
+  <a href="{{ url_for('admin.add_staff') }}{% if selected_fid %}?facility_id={{ selected_fid }}{% endif %}"
+     class="btn btn-primary"><i class="ti ti-plus"></i>Add Staff Member</a>
+</div>
+
+{% if facilities %}
+<form method="GET" style="display:flex;gap:10px;margin-bottom:20px;">
+  <select name="facility_id" style="flex:1;max-width:360px;">
+    <option value="">Select facility...</option>
+    {% for f in facilities %}
+    <option value="{{ f.id }}" {% if f.id == selected_fid %}selected{% endif %}>{{ f.name }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn-secondary">View</button>
+</form>
+{% endif %}
+
+{% if staff %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Joined</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in staff %}
+        <tr>
+          <td>
+            <strong>{{ m.name }}</strong>
+            {% if m.role == 'doctor' %}
+              {% if m.verified_doctor %}
+                <span class="badge badge-success" style="margin-left:4px;font-size:10px;">UMDPC Verified</span>
+              {% else %}
+                <span class="badge badge-warning" style="margin-left:4px;font-size:10px;">Pending</span>
+              {% endif %}
+            {% endif %}
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ m.email }}</td>
+          <td style="font-size:12px;">{{ m.phone or '—' }}</td>
+          <td><span class="badge badge-{{ m.role }}">{{ m.role.replace('_',' ').title() }}</span></td>
+          <td>
+            <span class="badge badge-{{ 'success' if m.active else 'danger' }}">
+              {{ 'Active' if m.active else 'Inactive' }}
+            </span>
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ m.created_at.strftime('%d %b %Y') }}</td>
+          <td style="display:flex;gap:6px;flex-wrap:wrap;">
+            <a href="{{ url_for('admin.edit_staff', user_id=m.id) }}"
+               class="btn btn-secondary btn-sm"><i class="ti ti-edit"></i>Edit</a>
+            {% if m.id != current_user.id %}
+            <form method="POST" action="{{ url_for('admin.deactivate_staff', user_id=m.id) }}"
+                  onsubmit="return confirm('{{ 'Activate' if not m.active else 'Deactivate' }} {{ m.name }}?')">
+              <button type="submit"
+                      class="btn btn-{{ 'success' if not m.active else 'warning' }} btn-sm">
+                {{ 'Activate' if not m.active else 'Deactivate' }}
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% elif selected_fid or current_user.role == 'facility_admin' %}
+<div class="empty-state card">
+  <i class="ti ti-users"></i>
+  <p>No staff members found.</p>
+  <a href="{{ url_for('admin.add_staff') }}{% if selected_fid %}?facility_id={{ selected_fid }}{% endif %}"
+     class="btn btn-primary">Add First Staff Member</a>
+</div>
+{% endif %}
+{% endblock %}

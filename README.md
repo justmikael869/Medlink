@@ -36,7 +36,7 @@ MedLink Uganda closes these gaps in one integrated platform.
 
 ### Telemedicine
 - Book in-person or remote consultations with verified doctors
-- **Video call embedded** via Daily.co — no app needed, works in browser
+- **Built-in video calls** (WebRTC) — no app, no paid service, works in the browser
 - **AI symptom checker** powered by Claude — Uganda-aware (malaria, typhoid, TB, sickle cell)
 - Prescription PDF download — take to any pharmacy
 - **Referral letter PDF** generation — closes the referral loop
@@ -100,7 +100,7 @@ MedLink Uganda
 ├── ORM: SQLAlchemy + Flask-SQLAlchemy  
 ├── Auth: Flask-Login
 ├── AI: Anthropic Claude Haiku (symptom checker + mental health chat)
-├── Video: Daily.co (embedded iframe, no app required)
+├── Video: built-in WebRTC + Socket.IO signalling (no third-party service)
 ├── SMS: Africa's Talking (reminders + USSD)
 ├── PDF: ReportLab (prescriptions + referral letters)
 ├── Maps: Leaflet.js + OpenStreetMap (free, no API key)
@@ -122,7 +122,7 @@ pip install -r requirements.txt
 # 2. Set up environment (edit .env with your API keys — all optional)
 # ANTHROPIC_API_KEY for AI features
 # AT_API_KEY for SMS
-# DAILY_API_KEY for video calls
+# (video calls need no key; see 'Video calls and TURN' below)
 
 # 3. Seed the database with demo data
 python seed.py
@@ -180,3 +180,13 @@ python run.py
 ---
 
 *Built with for Uganda · MedLink Uganda 2024*
+
+## Video calls and TURN
+
+Video consultations are built in (WebRTC, signalled over Socket.IO) and need no
+account or API key. The two browsers connect directly using free public STUN
+servers. On some mobile networks a direct connection is impossible; if patients
+report "Could not connect the call", add a TURN relay by setting `TURN_URLS`,
+`TURN_USERNAME` and `TURN_CREDENTIAL` (any TURN provider; check its current free
+allowance before relying on it). Run exactly **one** gunicorn worker (as in the
+Procfile) because call state is held in memory.

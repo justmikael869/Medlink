@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Consultation History — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Consultation History</h1>
+    <p class="page-subtitle">All completed consultations</p>
+  </div>
+</div>
+{% if appts %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Reference</th><th>Patient</th><th>Date</th><th>Diagnosis</th><th>Payment</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for a in appts %}
+        <tr>
+          <td style="font-weight:500;">{{ a.reference }}</td>
+          <td>{{ a.patient.name }}<br><small style="color:var(--text-muted);">{{ a.patient.phone or '' }}</small></td>
+          <td style="font-size:12px;color:var(--text-muted);">
+            {{ a.slot_time.strftime('%d %b %Y') if a.slot_time else a.created_at.strftime('%d %b %Y') }}
+          </td>
+          <td style="font-size:12px;">
+            {{ a.consultation.diagnosis[:60] ~ '…' if a.consultation and a.consultation.diagnosis and a.consultation.diagnosis|length >60
+               else (a.consultation.diagnosis if a.consultation else '—') }}
+          </td>
+          <td>
+            {% if a.payment %}
+            <span class="badge badge-{{ a.payment.status }}">{{ a.payment.status.title() }}</span>
+            <div style="font-size:11px;color:var(--text-muted);">UGX {{ '{:,.0f}'.format(a.payment.net_amount_ugx) }}</div>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('telemedicine.appointment_detail', appt_id=a.id) }}"
+               class="btn btn-secondary btn-sm">View</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="empty-state card">
+  <i class="ti ti-notes-medical"></i>
+  <p>No completed consultations yet.</p>
+</div>
+{% endif %}
+{% endblock %}

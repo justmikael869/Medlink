@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Book at {{ facility.name }} — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:560px;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Book at {{ facility.name }}</h1>
+      <p class="page-subtitle">{{ facility.facility_type.replace('_',' ').title() }} · {{ facility.district.name if facility.district else '' }}</p>
+    </div>
+    <a href="{{ url_for('telemedicine.institution_list') }}" class="btn btn-secondary">← Back</a>
+  </div>
+
+  <div class="card" style="background:#eff6ff;border:1px solid #bfdbfe;margin-bottom:12px;">
+    <div style="display:flex;gap:10px;align-items:center;">
+      <div style="font-size:28px;color:#1d4ed8;"><i class="ti ti-building-hospital"></i></div>
+      <div>
+        <div style="font-weight:600;">{{ facility.name }}</div>
+        {% if facility.address %}<div style="font-size:12px;color:#6b7280;">{{ facility.address }}</div>{% endif %}
+        {% if facility.phone %}<div style="font-size:12px;color:#6b7280;">{{ facility.phone }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <form method="POST" action="{{ url_for('telemedicine.book_institution', facility_id=facility.id) }}">
+      <input type="hidden" name="appt_type" value="in_person">
+      <div class="form-group">
+        <label>Department / Service needed</label>
+        <select name="department">
+          <option value="">General / Outpatient</option>
+          <option value="Emergency">Emergency / Casualty</option>
+          <option value="Maternity">Maternity / Antenatal</option>
+          <option value="Paediatrics">Paediatrics (Children)</option>
+          <option value="Laboratory">Laboratory / Tests</option>
+          <option value="Pharmacy">Pharmacy / Medicine pickup</option>
+          <option value="HIV/AIDS Clinic">HIV/AIDS Clinic</option>
+          <option value="TB Clinic">TB Clinic</option>
+          <option value="Eye Clinic">Eye Clinic</option>
+          <option value="Surgery">Surgery</option>
+          <option value="X-Ray/Imaging">X-Ray / Imaging</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Preferred date & time</label>
+        <select name="slot_time">
+          <option value="">— Walk-in (no specific slot) —</option>
+          {% for slot in slots %}
+          <option value="{{ slot.strftime('%Y-%m-%dT%H:%M') }}">{{ slot.strftime('%A, %d %b %Y at %H:%M') }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Brief reason for visit</label>
+        <textarea name="notes" rows="3" placeholder="e.g. Fever and cough for 5 days, coming for malaria test and treatment…"></textarea>
+      </div>
+
+      <div style="background:#dcfce7;border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px;">
+         <strong>No payment required at booking.</strong><br>
+        The facility will be notified and will be expecting you. A QR code will be generated for fast check-in.
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Book Appointment</button>
+        <a href="{{ url_for('telemedicine.institution_list') }}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Complete Consultation — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:700px;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Complete Consultation</h1>
+      <p class="page-subtitle">Patient: {{ appt.patient.name }} · {{ appt.reference }}</p>
+    </div>
+  </div>
+  <div class="card">
+    <form method="POST">
+      <div class="form-group">
+        <label>Symptoms reported by patient</label>
+        <textarea name="symptoms" rows="2" placeholder="Patient-reported symptoms...">{{ appt.notes or '' }}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Diagnosis *</label>
+        <textarea name="diagnosis" rows="2" required placeholder="Your clinical diagnosis..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Prescription (free text summary)</label>
+        <textarea name="prescription_text" rows="2" placeholder="e.g. Coartem 4 tabs twice daily for 3 days..."></textarea>
+      </div>
+
+      <div style="margin:16px 0 8px;font-weight:600;font-size:14px;">Structured Prescriptions</div>
+      <div id="rx-list">
+        <div class="rx-row" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:end;">
+          <div>
+            <label style="font-size:11px;">Medicine</label>
+            <select name="med_id[]">
+              <option value="">— Select —</option>
+              {% for m in medicines %}
+              <option value="{{ m.id }}">{{ m.name }}{% if m.requires_cold_chain %} {% endif %}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div><label style="font-size:11px;">Dosage</label><input name="dosage[]" placeholder="e.g. 500mg"></div>
+          <div><label style="font-size:11px;">Frequency</label><input name="frequency[]" placeholder="e.g. Twice daily"></div>
+          <div><label style="font-size:11px;">Days</label><input name="duration_days[]" type="number" min="1" placeholder="7"></div>
+          <div><label style="font-size:11px;">Notes</label><input name="p_notes[]" placeholder="With food"></div>
+          <div style="padding-top:18px;"><button type="button" onclick="this.closest('.rx-row').remove()" style="background:#fee2e2;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;color:#dc2626;"></button></div>
+        </div>
+      </div>
+      <button type="button" onclick="addRxRow()" class="btn btn-secondary btn-sm" style="margin-bottom:16px;">+ Add medicine</button>
+
+      <div class="form-group">
+        <label>Follow-up date <span style="font-size:11px;color:var(--text-muted);">(optional)</span></label>
+        <input type="date" name="follow_up_date">
+      </div>
+
+      <div class="form-group">
+        <label>Doctor's private notes</label>
+        <textarea name="doctor_notes" rows="2" placeholder="Internal notes (not visible to patient)..."></textarea>
+      </div>
+
+      <!-- Referral section -->
+      <div style="margin:16px 0 8px;font-weight:600;font-size:14px;">Referral</div>
+      <div class="card" style="background:var(--surface-2);border:0.5px dashed var(--border);margin-bottom:16px;">
+        <label class="checkbox-label" style="margin-bottom:12px;">
+          <input type="checkbox" name="referral_needed" value="yes" id="ref-chk" onchange="document.getElementById('ref-fields').style.display=this.checked?'block':'none'">
+          This patient needs to be referred to another facility
+        </label>
+        <div id="ref-fields" style="display:none;">
+          <div class="form-group">
+            <label>Referred to facility</label>
+            <input type="text" name="referred_to_name" placeholder="e.g. Mulago National Referral Hospital, Kampala">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Reason for referral</label>
+            <textarea name="referral_reason" rows="2" placeholder="Clinical reason for referral — this will appear on the referral letter..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Complete & Notify Patient</button>
+        <a href="{{ url_for('telemedicine.appointment_detail', appt_id=appt.id) }}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function addRxRow() {
+  const list = document.getElementById('rx-list');
+  const first = list.querySelector('.rx-row');
+  const clone = first.cloneNode(true);
+  clone.querySelectorAll('input,select').forEach(el =>el.value = '');
+  list.appendChild(clone);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Resolve Alert — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Resolve Alert</h1>
+  <a href="{{ url_for('alerts.index') }}" class="btn btn-secondary">← Back</a>
+</div>
+<div class="card" style="max-width:520px;">
+  <div style="background:#fef3c7;border-radius:8px;padding:14px;margin-bottom:18px;">
+    <strong>{{ alert.medicine.name }}</strong>— {{ alert.facility.name }}<br>
+    <span class="badge badge-{{ alert.severity }}" style="margin-top:4px;">{{ alert.severity }}</span>
+    {% if alert.note %}<p style="font-size:12px;color:#6b7280;margin-top:6px;">{{ alert.note }}</p>{% endif %}
+  </div>
+  <form method="POST">
+    <div class="form-group">
+      <label>Resolution note</label>
+      <textarea name="note" placeholder="How was this resolved? Stock source?"></textarea>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-success">Mark Resolved</button>
+      <a href="{{ url_for('alerts.index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

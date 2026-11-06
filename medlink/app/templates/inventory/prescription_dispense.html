@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Dispense Prescription — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:680px;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Dispense Prescription</h1>
+      <p class="page-subtitle">
+        {{ rx.medicine_name }}
+        {% if appt %} — Patient: {{ appt.patient.name }}{% endif %}
+      </p>
+    </div>
+    {% if appt %}
+    <a href="{{ url_for('telemedicine.appointment_detail', appt_id=appt.id) }}"
+       class="btn btn-secondary">Back to Appointment</a>
+    {% endif %}
+  </div>
+
+  <!-- Prescription card -->
+  <div class="card" style="margin-bottom:16px;border-left:3px solid var(--primary);">
+    <div class="card-header"><span class="card-title">Prescription Details</span></div>
+    <div class="form-row">
+      <div>
+        <table style="font-size:13px;">
+          <tr><td style="color:var(--text-muted);padding:5px 12px 5px 0;width:140px;">Medicine</td>
+              <td><strong>{{ rx.medicine_name }}</strong></td></tr>
+          <tr><td style="color:var(--text-muted);padding:5px 12px 5px 0;">Dosage</td>
+              <td>{{ rx.dosage or '—' }}</td></tr>
+          <tr><td style="color:var(--text-muted);padding:5px 12px 5px 0;">Frequency</td>
+              <td>{{ rx.frequency or '—' }}</td></tr>
+          <tr><td style="color:var(--text-muted);padding:5px 12px 5px 0;">Duration</td>
+              <td>{{ (rx.duration_days|string + ' days') if rx.duration_days else '—' }}</td></tr>
+          <tr><td style="color:var(--text-muted);padding:5px 12px 5px 0;">Route</td>
+              <td>{{ rx.route or 'Oral' }}</td></tr>
+          <tr><td style="color:var(--text-muted);padding:5px 12px 5px 0;">Instructions</td>
+              <td>{{ rx.instructions or '—' }}</td></tr>
+          <tr><td style="color:var(--text-muted);padding:5px 12px 5px 0;">Qty to dispense</td>
+              <td><strong>{{ rx.quantity_to_dispense or '—' }}</strong></td></tr>
+        </table>
+      </div>
+      <div>
+        {% if rx.dispensed %}
+        <div style="background:#dcfce7;border-radius:10px;padding:16px;text-align:center;">
+          <i class="ti ti-circle-check" style="font-size:28px;color:#166534;display:block;margin-bottom:6px;"></i>
+          <div style="font-weight:600;color:#166534;">Already Dispensed</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:4px;">
+            By {{ rx.dispenser.name if rx.dispenser else 'staff' }}
+            on {{ rx.dispensed_at.strftime('%d %b %Y %H:%M') if rx.dispensed_at else '' }}
+          </div>
+        </div>
+        {% elif rx.medicine and rx.medicine.requires_cold_chain %}
+        <div style="background:#dbeafe;border-radius:10px;padding:14px;font-size:13px;">
+          <i class="ti ti-snowflake" style="color:#1e40af;"></i>
+          <strong>Cold chain medicine.</strong><br>
+          Verify temperature log before dispensing.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock availability -->
+  {% if alternatives %}
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header"><span class="card-title">Stock Availability</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Facility</th><th>Available Qty</th><th>Status</th><th>Unit Price (UGX)</th></tr>
+        </thead>
+        <tbody>
+          {% for item in alternatives %}
+          <tr style="{% if item.facility_id == current_facility_id %}background:#f0fdf4;{% endif %}">
+            <td>
+              <strong>{{ item.facility.name }}</strong>
+              {% if item.facility_id == current_facility_id %}
+              <span class="badge badge-success" style="margin-left:6px;font-size:10px;">This facility</span>
+              {% endif %}
+            </td>
+            <td style="font-weight:600;">{{ item.quantity }}</td>
+            <td><span class="badge badge-{{ item.status }}">{{ item.status.replace('_',' ').title() }}</span></td>
+            <td>{{ '{:,.0f}'.format(item.sell_price or item.unit_price) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="card" style="margin-bottom:16px;border-left:3px solid var(--danger);">
+    <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--danger);">
+      <i class="ti ti-alert-circle" style="font-size:20px;"></i>
+      <div>
+        <strong>No stock found</strong>for {{ rx.medicine_name }} in the system.
+        The patient may need to purchase from an external source or be referred.
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Dispense form -->
+  {% if not rx.dispensed %}
+  <div class="card">
+    <div class="card-header"><span class="card-title">Record Dispensing</span></div>
+    <form method="POST">
+      {% if alternatives %}
+      <div class="form-group">
+        <label>Dispense from facility *</label>
+        <select name="dispense_facility_id" required>
+          {% for item in alternatives %}
+          <option value="{{ item.facility_id }}"
+            {% if item.facility_id == current_facility_id %}selected{% endif %}>
+            {{ item.facility.name }} — {{ item.quantity }} available
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% elif current_facility_id %}
+      <input type="hidden" name="dispense_facility_id" value="{{ current_facility_id }}">
+      {% endif %}
+
+      <div class="form-group">
+        <label>Actual quantity dispensed *</label>
+        <input name="actual_qty" type="number" required min="1"
+               value="{{ rx.quantity_to_dispense or '' }}"
+               placeholder="Enter quantity">
+        <div class="form-hint">
+          Prescribed: {{ rx.quantity_to_dispense or 'not specified' }}.
+          Adjust if partial dispensing.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Note (optional)</label>
+        <input name="note" placeholder="e.g. Partial dispense — remainder to be collected tomorrow">
+      </div>
+
+      <div style="background:#fef9c3;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;">
+        <i class="ti ti-info-circle"></i>
+        Dispensing will deduct from stock and mark this prescription line as complete.
+        A notification will be sent to the patient.
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-success">
+          <i class="ti ti-check"></i>Confirm Dispensing
+        </button>
+        {% if appt %}
+        <a href="{{ url_for('telemedicine.appointment_detail', appt_id=appt.id) }}"
+           class="btn btn-secondary">Cancel</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, abort
 from flask_login import login_required, current_user
 from app import db
 from app.models import (User, Facility, District, Appointment, Consultation,
@@ -303,6 +303,23 @@ def appointment_detail(appt_id):
     return render_template('telemedicine/appt_detail.html', appt=appt)
 
 
+@tele_bp.route('/appointments/<int:appt_id>/video')
+@login_required
+def video_room(appt_id):
+    """The live video consultation page. Only this appointment's patient
+    and doctor may open it."""
+    appt = Appointment.query.get_or_404(appt_id)
+    if current_user.id not in (appt.patient_id, appt.doctor_id):
+        abort(403)
+    if appt.appt_type != 'remote' or appt.status not in ('confirmed', 'in_progress'):
+        flash('The video room opens once a remote appointment is confirmed.', 'warning')
+        return redirect(url_for('telemedicine.appointment_detail', appt_id=appt.id))
+    from app.services.video import get_ice_servers
+    return render_template('telemedicine/video_room.html', appt=appt,
+                           is_doctor=(current_user.id == appt.doctor_id),
+                           ice_servers=get_ice_servers())
+
+
 @tele_bp.route('/appointments/<int:appt_id>/confirm', methods=['POST'])
 @login_required
 def confirm_appointment(appt_id):
@@ -310,14 +327,13 @@ def confirm_appointment(appt_id):
     appt.status = 'confirmed'
     appt.updated_at = datetime.utcnow()
 
-    # Create video room for remote consultations
+    # Video room for remote consultations (built-in WebRTC, see services/video.py)
     video_note = ''
     if appt.appt_type == 'remote':
         from app.services.video import create_consultation_room
-        room = create_consultation_room(appt.reference)
-        if room.get('room_url'):
-            appt.video_room_url = room['room_url']
-            video_note = ' Video room created.'
+        room = create_consultation_room(appt)
+        appt.video_room_url = room['room_url']
+        video_note = ' Video room is ready.'
 
     db.session.add(Notification(
         recipient_user_id=appt.patient_id,

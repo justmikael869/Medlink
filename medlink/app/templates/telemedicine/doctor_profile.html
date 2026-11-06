@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}My Profile — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:640px;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">My Doctor Profile</h1>
+      <p class="page-subtitle">
+        UMDPC: {{ current_user.umdpc_number or 'Not set' }}
+        <span class="badge badge-{{ 'success' if current_user.verified_doctor else 'warning' }}" style="margin-left:8px;">
+          {{ 'Verified' if current_user.verified_doctor else 'Pending Verification' }}
+        </span>
+      </p>
+    </div>
+  </div>
+  <div class="card">
+    <form method="POST">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Specialisation</label>
+          <select name="specialisation">
+            {% for s in specialisations %}
+            <option value="{{ s }}" {% if current_user.specialisation == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Consultation Fee (UGX)</label>
+          <input name="fee" type="number" min="0" step="500"
+                 value="{{ current_user.consultation_fee_ugx or 0 }}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input name="phone" type="tel" value="{{ current_user.phone or '' }}"
+                 placeholder="+256700000000">
+        </div>
+        <div class="form-group">
+          <label>Languages Spoken</label>
+          <input name="languages" value="{{ current_user.languages or '' }}"
+                 placeholder="English, Luganda, Swahili">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Bio (shown to patients)</label>
+        <textarea name="bio" rows="4"
+                  placeholder="Your experience, specialisations, and approach…">{{ current_user.bio or '' }}</textarea>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

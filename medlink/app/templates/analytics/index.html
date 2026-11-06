@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}Analytics — MedLink{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Supply Chain Analytics</h1>
+    <p class="page-subtitle">Live shortage map, demand gaps, and distribution intelligence</p>
+  </div>
+</div>
+
+<!-- Stock status summary -->
+<div class="stats-grid" style="margin-bottom:20px;">
+  <div class="stat-card">
+    <div class="stat-label">Out of stock lines</div>
+    <div class="stat-value {% if out_of_stock %}red{% else %}green{% endif %}">{{ out_of_stock }}</div>
+    <div class="stat-sub">across all facilities</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Low stock lines</div>
+    <div class="stat-value {% if low_stock %}orange{% else %}green{% endif %}">{{ low_stock }}</div>
+    <div class="stat-sub">below threshold</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Adequate stock</div>
+    <div class="stat-value green">{{ adequate }}</div>
+    <div class="stat-sub">medicine lines</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Search gaps</div>
+    <div class="stat-value {% if top_gaps %}orange{% else %}green{% endif %}">{{ top_gaps|length }}</div>
+    <div class="stat-sub">unmet searches</div>
+  </div>
+</div>
+
+<!-- Map -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header">
+    <span class="card-title">Shortage Hotspot Map</span>
+    <span style="font-size:12px;color:#6b7280;">Red = critical alerts · Orange = open alerts · Green = clear</span>
+  </div>
+  <div id="analytics-map" style="height:380px;border-radius:8px;"></div>
+</div>
+
+<div class="analytics-grid">
+
+  <!-- Top shortage medicines -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Top Shortage Medicines</span></div>
+    {% if top_shortage %}
+      {% set max_count = top_shortage[0][1] %}
+      {% for name, count in top_shortage %}
+      <div class="bar-row">
+        <span class="bar-label" title="{{ name }}">{{ name[:28] }}</span>
+        <div class="bar-track">
+          <div class="bar-fill red" style="width:{{ (count / max_count * 100)|int }}%"></div>
+        </div>
+        <span class="bar-count">{{ count }}</span>
+      </div>
+      {% endfor %}
+    {% else %}
+    <p style="text-align:center;color:#9ca3af;padding:20px;">No shortages</p>
+    {% endif %}
+  </div>
+
+  <!-- Top search gaps -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Searched But Not Found</span>
+      <span style="font-size:12px;color:#6b7280;">Patient demand with no supply</span>
+    </div>
+    {% if top_gaps %}
+      {% set max_g = top_gaps[0].count %}
+      {% for gap in top_gaps %}
+      <div class="bar-row">
+        <span class="bar-label" title="{{ gap.search_query }}">{{ gap.search_query[:28] }}</span>
+        <div class="bar-track">
+          <div class="bar-fill orange" style="width:{{ (gap.count / max_g * 100)|int }}%"></div>
+        </div>
+        <span class="bar-count">{{ gap.count }}</span>
+      </div>
+      {% endfor %}
+    {% else %}
+    <p style="text-align:center;color:#9ca3af;padding:20px;">All searches finding results</p>
+    {% endif %}
+  </div>
+
+  <!-- Facilities with most alerts -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Facilities Most Affected</span></div>
+    {% if top_facilities %}
+      {% set max_f = top_facilities[0][2] %}
+      {% for name, ftype, count in top_facilities %}
+      <div class="bar-row">
+        <span class="bar-label" title="{{ name }}">{{ name[:26] }}</span>
+        <div class="bar-track">
+          <div class="bar-fill red" style="width:{{ (count / max_f * 100)|int }}%"></div>
+        </div>
+        <span class="bar-count">{{ count }}</span>
+      </div>
+      {% endfor %}
+    {% else %}
+    <p style="text-align:center;color:#9ca3af;padding:20px;">No facility alerts</p>
+    {% endif %}
+  </div>
+
+  <!-- Category stockout breakdown -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Stockout by Category</span></div>
+    {% if cat_stockout %}
+      {% set max_c = cat_stockout[0][1] %}
+      {% for cat, count in cat_stockout %}
+      <div class="bar-row">
+        <span class="bar-label">{{ cat[:26] }}</span>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:{{ (count / max_c * 100)|int }}%"></div>
+        </div>
+        <span class="bar-count">{{ count }}</span>
+      </div>
+      {% endfor %}
+    {% else %}
+    <p style="text-align:center;color:#9ca3af;padding:20px;">No stockouts</p>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- Alert trend (last 30 days) -->
+<div class="card">
+  <div class="card-header"><span class="card-title">Alert Trend — Last 30 Days</span></div>
+  <canvas id="trend-chart" height="80"></canvas>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+// ── Map ──────────────────────────────────────────────────────────
+const map = L.map('analytics-map').setView([1.37, 32.29], 7);
+    var satellite = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { attribution: 'Tiles © Esri · Maxar', maxZoom: 19 }
+    );
+    var labels = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+      { attribution: '© Esri', maxZoom: 19 }
+    );
+    var streets = L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { attribution: '© OpenStreetMap', maxZoom: 19 }
+    );
+    satellite.addTo(map);
+    labels.addTo(map);
+    L.control.layers({'Satellite': satellite,'Street Map': streets},{'Labels': labels},{position:'topright',collapsed:false}).addTo(map);
+
+fetch('/analytics/api/map-data')
+  .then(r =>r.json())
+  .then(data =>{
+    data.forEach(f =>{
+      if (!f.lat || !f.lon) return;
+      const col = f.critical >0 ? '#ef4444' : f.open_alerts >0 ? '#f97316' : '#22c55e';
+      const size = Math.max(10, Math.min(30, 10 + f.open_alerts * 3));
+      const icon = L.divIcon({
+        html: `<div style="background:${col};border-radius:50%;width:${size}px;height:${size}px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);opacity:.9;"></div>`,
+        iconSize:[size,size], iconAnchor:[size/2,size/2], className:''
+      });
+      L.marker([f.lat, f.lon], {icon})
+        .addTo(map)
+        .bindPopup(`<strong>${f.name}</strong><br>${f.district}<br>Open alerts: <b>${f.open_alerts}</b>${f.critical >0 ? ' · <span style="color:#ef4444">'+f.critical+' critical</span>' : ''}`);
+    });
+  });
+
+// ── Alert trend chart ────────────────────────────────────────────
+const trendData = {{ alert_trend | tojson }};
+const ctx = document.getElementById('trend-chart');
+if (trendData.length >0) {
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: trendData.map(d =>d.day),
+      datasets: [{
+        label: 'Alerts raised',
+        data: trendData.map(d =>d.count),
+        backgroundColor: '#0f4c81',
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+        x: { ticks: { maxTicksLimit: 10 } }
+      }
+    }
+  });
+} else {
+  ctx.parentElement.innerHTML = '<p style="text-align:center;color:#9ca3af;padding:20px;">No alert data yet.</p>';
+}
+</script>
+{% endblock %}

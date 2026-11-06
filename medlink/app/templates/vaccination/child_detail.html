@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ child.name }} Vaccines — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ child.name }}</h1>
+    <p class="page-subtitle">{{ age_label }} · Born {{ child.date_of_birth.strftime('%d %B %Y') }}</p>
+  </div>
+  <a href="{{ url_for('vaccination.index') }}" class="btn btn-secondary">← Back</a>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title">EPI Vaccination Schedule</span></div>
+  {% for v in vaccines %}
+  {% set state = 'given' if v.given else ('overdue' if v.due_date < today else 'upcoming') %}
+  <div style="display:flex;align-items:flex-start;gap:14px;padding:14px 0;{% if not loop.last %}border-bottom:0.5px solid var(--border);{% endif %}">
+    <div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;
+      {% if state=='given' %}background:#dcfce7;color:#16a34a;
+      {% elif state=='overdue' %}background:#fee2e2;color:#dc2626;border:2px solid #ef4444;
+      {% else %}background:var(--surface-2);color:var(--text-muted);{% endif %}">
+      {% if state=='given' %}{% elif state=='overdue' %}!{% else %}{{ loop.index }}{% endif %}
+    </div>
+    <div style="flex:1;">
+      <div style="font-size:14px;font-weight:{% if state!='upcoming' %}600{% else %}500{% endif %};
+        color:{% if state=='overdue' %}#dc2626{% elif state=='given' %}var(--text-muted){% else %}var(--text-primary){% endif %};">
+        {{ v.vaccine_name }} — Dose {{ v.dose_number }}
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">
+        Due: {{ v.due_date.strftime('%d %b %Y') }}
+        {% if state == 'given' %} · Given {{ v.given_date.strftime('%d %b %Y') if v.given_date else '' }}
+          {% if v.batch_number %} · Batch: {{ v.batch_number }}{% endif %}
+        {% elif state == 'overdue' %} · <span style="color:#dc2626;font-weight:600;">OVERDUE by {{ (today - v.due_date).days }} days</span>
+        {% else %}
+          {% set days = (v.due_date - today).days %}
+          · {% if days==0 %}Today{% elif days==1 %}Tomorrow{% else %}In {{ days }} days{% endif %}
+        {% endif %}
+      </div>
+    </div>
+    {% if not v.given %}
+    <form method="POST" action="{{ url_for('vaccination.mark_given', vid=v.id) }}" style="display:flex;gap:6px;flex-shrink:0;align-items:center;">
+      <input type="text" name="batch_number" placeholder="Batch#" style="width:90px;font-size:11px;">
+      <button type="submit" class="btn btn-sm" style="background:{% if state=='overdue' %}#dc2626;color:#fff;border-color:#dc2626{% else %}var(--surface-2);color:var(--text-secondary){% endif %};font-size:11px;"
+              onclick="return confirm('Mark {{ v.vaccine_name }} dose {{ v.dose_number }} as given today?')">
+        Given 
+      </button>
+    </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

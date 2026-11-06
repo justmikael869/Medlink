@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}QR Check-in — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:500px;margin:0 auto;">
+  <div class="page-header">
+    <h1 class="page-title">QR Check-in</h1>
+  </div>
+  <div class="card">
+    <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">
+      Enter the appointment code shown on the patient's phone to check them in.
+    </p>
+    <form method="POST">
+      <div class="form-group">
+        <label>Appointment Code</label>
+        <input name="qr_code" placeholder="e.g. APT-A1B2C3" style="font-size:18px;text-align:center;letter-spacing:3px;text-transform:uppercase;" autofocus required>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;">Check In Patient</button>
+    </form>
+  </div>
+
+  {% if appt %}
+  <div class="card" style="margin-top:16px;border-left:3px solid #22c55e;">
+    <div class="card-header"><span class="card-title" style="color:#166534;">Checked In</span></div>
+    <table style="font-size:13px;">
+      <tr><td style="color:#6b7280;padding:5px 0;width:120px;">Patient</td><td><strong>{{ appt.patient.name }}</strong></td></tr>
+      <tr><td style="color:#6b7280;padding:5px 0;">Phone</td><td>{{ appt.patient.phone or '—' }}</td></tr>
+      <tr><td style="color:#6b7280;padding:5px 0;">Doctor</td><td>{{ ('Dr ' + appt.doctor.name) if appt.doctor else '—' }}</td></tr>
+      <tr><td style="color:#6b7280;padding:5px 0;">Slot</td><td>{{ appt.slot_time.strftime('%d %b %Y %H:%M') if appt.slot_time else 'TBD' }}</td></tr>
+      {% if appt.notes %}<tr><td style="color:#6b7280;padding:5px 0;">Notes</td><td>{{ appt.notes }}</td></tr>{% endif %}
+    </table>
+  </div>
+  {% endif %}
+{% endblock %}

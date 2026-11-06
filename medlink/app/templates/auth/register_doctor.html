@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Register as Healthcare Professional — MedLink Uganda{% endblock %}
+{% block public_content %}
+
+<div style="max-width:680px;margin:2rem auto;padding:0 1rem;">
+  <div style="margin-bottom:1.5rem;">
+    <a href="{{ url_for('auth.register_choose') }}" style="color:var(--text-muted);font-size:0.875rem;text-decoration:none;">
+      <i class="ti ti-arrow-left"></i>Back to registration options
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title"><i class="ti ti-stethoscope" style="color:var(--primary);"></i>Register as a Healthcare Professional</h2>
+      <p style="color:var(--text-muted);font-size:0.875rem;margin:0.25rem 0 0;">
+        For individual doctors, nurses, and pharmacists. Your credentials will be verified by the system admin before you can take consultations.
+      </p>
+    </div>
+    <div class="card-body">
+      <form method="POST">
+
+        <div style="background:var(--surface);border-radius:8px;padding:1.25rem;margin-bottom:1.5rem;border-left:3px solid var(--primary);">
+          <h4 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Personal Information</h4>
+
+          <div class="form-group">
+            <label class="form-label">Professional Role <span style="color:var(--danger);">*</span></label>
+            <select name="role" class="form-control" id="role_select" required>
+              <option value="doctor">Medical Doctor (MD)</option>
+              <option value="nurse">Nurse / Midwife</option>
+              <option value="pharmacist">Pharmacist</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Full Name <span style="color:var(--danger);">*</span></label>
+            <input type="text" name="name" class="form-control" placeholder="Dr. / Nurse / Pharm. full name" required>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-group">
+              <label class="form-label">Email Address <span style="color:var(--danger);">*</span></label>
+              <input type="email" name="email" class="form-control" placeholder="you@email.com" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone Number</label>
+              <input type="tel" name="phone" class="form-control" placeholder="+256 ...">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Password <span style="color:var(--danger);">*</span></label>
+            <input type="password" name="password" class="form-control" minlength="6" required>
+          </div>
+        </div>
+
+        <div style="background:var(--surface);border-radius:8px;padding:1.25rem;margin-bottom:1.5rem;border-left:3px solid #2e7d32;">
+          <h4 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Professional Credentials</h4>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-group">
+              <label class="form-label">UMDPC / Professional Registration No.</label>
+              <input type="text" name="umdpc_number" class="form-control" placeholder="e.g. UMDPC/2019/12345">
+              <p class="form-hint">Uganda Medical and Dental Practitioners Council number, or relevant council number.</p>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Specialisation</label>
+              <select name="specialisation" class="form-control">
+                <option value="">Select specialisation...</option>
+                {% for s in specialisations %}
+                <option value="{{ s }}">{{ s }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-group">
+              <label class="form-label">District you primarily work in</label>
+              <select name="district_id" class="form-control">
+                <option value="">Select district...</option>
+                {% for d in districts %}
+                <option value="{{ d.id }}">{{ d.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group" id="fee_group">
+              <label class="form-label">Consultation Fee (UGX)</label>
+              <input type="number" name="consultation_fee_ugx" class="form-control" placeholder="e.g. 15000" min="0">
+              <p class="form-hint">For remote/telemedicine consultations.</p>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Affiliated Facility <span style="color:var(--text-muted);font-size:0.8rem;">(optional)</span></label>
+            <select name="facility_id" class="form-control">
+              <option value="">Independent / No facility</option>
+              {% for f in facilities %}
+              <option value="{{ f.id }}">{{ f.name }} ({{ f.facility_type.replace('_',' ').title() }})</option>
+              {% endfor %}
+            </select>
+            <p class="form-hint">If you work at a registered facility, select it here. The facility admin can also add you directly.</p>
+          </div>
+        </div>
+
+        <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:1rem;margin-bottom:1.5rem;font-size:0.85rem;color:#5d4037;">
+          <i class="ti ti-info-circle"></i>
+          Your account is created immediately. You can log in and set up your profile. However, your UMDPC credentials must be verified by the system admin before you can appear as available for patient consultations.
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%;">
+          <i class="ti ti-check"></i>Create My Account
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

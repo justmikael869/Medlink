@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — MedLink{% endblock %}
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ current_user.facility.name if current_user.facility else 'Facility Dashboard' }}</h1>
+    <p class="page-subtitle">{{ current_user.role.replace('_',' ').title() }} · {{ current_user.name }}</p>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <a href="{{ url_for('alerts.new') }}" class="btn btn-danger btn-sm"><i class="ti ti-alert-triangle"></i>Raise Alert</a>
+    <a href="{{ url_for('orders.new') }}" class="btn btn-primary btn-sm"><i class="ti ti-plus"></i>New Order</a>
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">Out of Stock</div>
+    <div class="stat-value {{ 'red' if out_of_stock else 'green' }}">{{ out_of_stock }}</div>
+    <div class="stat-sub">medicine lines</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Low Stock</div>
+    <div class="stat-value {{ 'orange' if low_stock else 'green' }}">{{ low_stock }}</div>
+    <div class="stat-sub">below threshold</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Open Alerts</div>
+    <div class="stat-value {{ 'orange' if open_alerts else 'green' }}">{{ open_alerts }}</div>
+    <div class="stat-sub">{{ critical }} critical</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Pending Orders</div>
+    <div class="stat-value {{ 'blue' if pending_orders else 'green' }}">{{ pending_orders }}</div>
+    <div class="stat-sub">awaiting delivery</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Today's Patients</div>
+    <div class="stat-value blue">{{ today_appts|length }}</div>
+    <div class="stat-sub">booked appointments</div>
+  </div>
+</div>
+
+<!-- Charts row -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
+
+  <!-- Stock health donut -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Stock Health</span></div>
+    <div class="card-body" style="display:flex;align-items:center;justify-content:center;padding:1rem;">
+      <canvas id="stockDonut" height="170" style="max-width:200px;"></canvas>
+    </div>
+  </div>
+
+  <!-- Dispensing trend line -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Dispensing — Last 7 Days</span></div>
+    <div class="card-body" style="padding:1rem;">
+      <canvas id="dispenseChart" height="170"></canvas>
+    </div>
+  </div>
+
+  <!-- Alert severity donut -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Alert Severity Breakdown</span></div>
+    <div class="card-body" style="display:flex;align-items:center;justify-content:center;padding:1rem;">
+      <canvas id="sevDonut" height="170" style="max-width:200px;"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Top medicines bar -->
+<div class="card" style="margin-bottom:1.5rem;">
+  <div class="card-header">
+    <span class="card-title">Top 6 Medicines by Current Stock Quantity</span>
+    <a href="{{ url_for('inventory.index') }}" class="btn btn-secondary btn-sm">Full inventory</a>
+  </div>
+  <div class="card-body" style="padding:1rem;">
+    <canvas id="topMedsChart" height="90"></canvas>
+  </div>
+</div>
+
+<!-- Tables -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Today's Appointments</span>
+      <a href="{{ url_for('telemedicine.checkin') }}" class="btn btn-secondary btn-sm"><i class="ti ti-qrcode"></i>QR Check-in</a>
+    </div>
+    {% if today_appts %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Time</th><th>Patient</th><th>Department</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for a in today_appts %}
+          <tr>
+            <td style="font-weight:500;white-space:nowrap;">{{ a.slot_time.strftime('%H:%M') if a.slot_time else 'Walk-in' }}</td>
+            <td>{{ a.patient.name }}<br><small style="color:var(--text-muted);">{{ a.patient.phone or '' }}</small></td>
+            <td style="font-size:12px;">{{ a.notes[:40] if a.notes else '—' }}</td>
+            <td><span class="badge badge-{{ a.status }}">{{ a.status.title() }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:24px;"><i class="ti ti-calendar"></i><p>No appointments today</p></div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Critical Alerts</span>
+      <a href="{{ url_for('alerts.index') }}" class="btn btn-secondary btn-sm">View all</a>
+    </div>
+    {% if recent_alerts %}
+    {% for a in recent_alerts %}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #f3f4f6;">
+      <div>
+        <div style="font-size:13px;font-weight:500;">{{ a.medicine.name }}</div>
+        <div style="font-size:11px;color:var(--text-muted);">{{ a.created_at.strftime('%d %b') }}</div>
+      </div>
+      <span class="badge badge-{{ a.severity }}">{{ a.severity }}</span>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state" style="padding:24px;"><i class="ti ti-circle-check"></i><p>No open alerts</p></div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+var L7 = {{ labels_7|safe }};
+var dTrend = {{ dispense_trend|safe }};
+var sDonut = {{ stock_donut|safe }};
+var topN = {{ top_names|safe }};
+var topQ = {{ top_qtys|safe }};
+var sevC = {{ sev_counts|safe }};
+
+Chart.defaults.font.family = 'Inter, sans-serif';
+
+// Stock health donut
+new Chart(document.getElementById('stockDonut'), {
+  type:'doughnut',
+  data:{
+    labels:['Healthy','Low Stock','Out of Stock'],
+    datasets:[{data:sDonut,backgroundColor:['#16a34a','#f59e0b','#ef4444']}]
+  },
+  options:{plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}}},cutout:'60%'}
+});
+
+// Dispensing trend
+new Chart(document.getElementById('dispenseChart'), {
+  type:'line',
+  data:{
+    labels:L7,
+    datasets:[{label:'Dispenses',data:dTrend,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.1)',tension:0.4,fill:true,pointRadius:4}]
+  },
+  options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+});
+
+// Alert severity
+var sevLabels = Object.keys(sevC).map(function(k){return k.charAt(0).toUpperCase()+k.slice(1);});
+var sevColors = sevLabels.map(function(l){return l==='Critical'?'#ef4444':l==='High'?'#f97316':l==='Medium'?'#f59e0b':'#6b7280';});
+new Chart(document.getElementById('sevDonut'), {
+  type:'doughnut',
+  data:{labels:sevLabels,datasets:[{data:Object.values(sevC),backgroundColor:sevColors}]},
+  options:{plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}}},cutout:'60%'}
+});
+
+// Top medicines bar
+new Chart(document.getElementById('topMedsChart'), {
+  type:'bar',
+  data:{
+    labels:topN,
+    datasets:[{label:'Units in stock',data:topQ,backgroundColor:'rgba(59,130,246,0.75)',borderRadius:4}]
+  },
+  options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}
+});
+</script>
+{% endblock %}

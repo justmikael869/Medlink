@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}District Dashboard — MedLink{% endblock %}
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">District Health Dashboard</h1>
+    <p class="page-subtitle">{{ current_user.name }}</p>
+  </div>
+  <a href="{{ url_for('search.gap_map') }}" class="btn btn-primary btn-sm"><i class="ti ti-map-pin"></i>Shortage Map</a>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">Open Alerts</div>
+    <div class="stat-value {{ 'orange' if total_alerts else 'green' }}">{{ total_alerts }}</div>
+    <div class="stat-sub">{{ critical_alerts }} critical</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Facilities with Zero Stock</div>
+    <div class="stat-value {{ 'red' if out_districts else 'green' }}">{{ out_districts }}</div>
+    <div class="stat-sub">at least one item out</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Reported Shortages</div>
+    <div class="stat-value blue">{{ top_gaps|length }}</div>
+    <div class="stat-sub">unique medicines searched</div>
+  </div>
+</div>
+
+<!-- Row 1: Alert trend + Severity breakdown -->
+<div class="grid-2" style="margin-bottom:1.5rem;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Alerts Raised — Last 7 Days</span></div>
+    <div class="card-body" style="padding:1rem;">
+      <canvas id="alertTrendChart" height="140"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Alert Severity Breakdown</span></div>
+    <div class="card-body" style="display:flex;align-items:center;justify-content:center;padding:1rem;">
+      <canvas id="sevChart" height="170" style="max-width:240px;"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Row 2: Shortage horizontal bar -->
+<div class="card" style="margin-bottom:1.5rem;">
+  <div class="card-header">
+    <span class="card-title">Top 10 Medicine Shortages (Searched but Not Found)</span>
+    <a href="{{ url_for('search.gap_map') }}" class="btn btn-secondary btn-sm">View map</a>
+  </div>
+  <div class="card-body" style="padding:1rem;">
+    <canvas id="shortageBar" height="120"></canvas>
+  </div>
+</div>
+
+<!-- Row 3: Facilities with most alerts -->
+{% if fac_names and fac_names != '[]' %}
+<div class="card" style="margin-bottom:1.5rem;">
+  <div class="card-header"><span class="card-title">Facilities with Most Open Alerts</span></div>
+  <div class="card-body" style="padding:1rem;">
+    <canvas id="facAlertsChart" height="100"></canvas>
+  </div>
+</div>
+{% endif %}
+
+<!-- Recent alerts table -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Critical Alerts by Facility</span>
+    <a href="{{ url_for('alerts.index') }}" class="btn btn-secondary btn-sm">All alerts</a>
+  </div>
+  {% if recent_alerts %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Facility</th><th>Medicine</th><th>Severity</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for a in recent_alerts %}
+        <tr>
+          <td style="font-size:12px;">{{ a.facility.name }}</td>
+          <td style="font-weight:500;">{{ a.medicine.name }}</td>
+          <td><span class="badge badge-{{ a.severity }}">{{ a.severity }}</span></td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ a.created_at.strftime('%d %b') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:24px;"><i class="ti ti-circle-check"></i><p>No open alerts</p></div>
+  {% endif %}
+</div>
+
+<script>
+var L7 = {{ labels_7|safe }};
+var aTrend = {{ alert_trend|safe }};
+var gLabels = {{ gap_labels|safe }};
+var gCounts = {{ gap_counts|safe }};
+var sevB = {{ sev_breakdown|safe }};
+var fNames = {{ fac_names|safe }};
+var fCounts = {{ fac_counts|safe }};
+
+Chart.defaults.font.family = 'Inter, sans-serif';
+
+// Alert trend
+new Chart(document.getElementById('alertTrendChart'), {
+  type:'line',
+  data:{
+    labels:L7,
+    datasets:[{label:'Alerts',data:aTrend,borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.1)',tension:0.4,fill:true,pointRadius:4}]
+  },
+  options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+});
+
+// Severity donut
+var sevLabels = Object.keys(sevB).map(function(k){return k.charAt(0).toUpperCase()+k.slice(1);});
+var sevColors = sevLabels.map(function(l){return l==='Critical'?'#ef4444':l==='High'?'#f97316':l==='Medium'?'#f59e0b':'#6b7280';});
+new Chart(document.getElementById('sevChart'), {
+  type:'doughnut',
+  data:{labels:sevLabels,datasets:[{data:Object.values(sevB),backgroundColor:sevColors}]},
+  options:{plugins:{legend:{position:'right',labels:{boxWidth:12,font:{size:11}}}},cutout:'60%'}
+});
+
+// Shortage horizontal bar
+new Chart(document.getElementById('shortageBar'), {
+  type:'bar',
+  data:{
+    labels:gLabels,
+    datasets:[{label:'Times searched with no result',data:gCounts,backgroundColor:'rgba(239,68,68,0.75)',borderRadius:4}]
+  },
+  options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{stepSize:1}}}}
+});
+
+// Facilities with most alerts
+if (fNames.length >0) {
+  new Chart(document.getElementById('facAlertsChart'), {
+    type:'bar',
+    data:{
+      labels:fNames,
+      datasets:[{label:'Open Alerts',data:fCounts,backgroundColor:'rgba(239,68,68,0.7)',borderRadius:4}]
+    },
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+  });
+}
+</script>
+{% endblock %}

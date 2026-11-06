@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Create an Account — MedLink Uganda{% endblock %}
+{% block public_content %}
+
+<div style="max-width:860px;margin:3rem auto;padding:0 1rem;">
+  <div style="text-align:center;margin-bottom:2.5rem;">
+    <h1 style="font-size:1.75rem;font-weight:700;color:var(--text-primary);margin-bottom:0.5rem;">Join MedLink Uganda</h1>
+    <p style="color:var(--text-muted);font-size:1rem;">Select the type of account that best describes you or your organisation.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.25rem;">
+
+    <!-- Patient -->
+    <a href="{{ url_for('auth.register') }}?step=patient" class="reg-card" style="text-decoration:none;">
+      <div class="card" style="border:2px solid transparent;transition:border-color 0.2s,box-shadow 0.2s;cursor:pointer;height:100%;">
+        <div class="card-body" style="text-align:center;padding:2rem 1.5rem;">
+          <div style="width:56px;height:56px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+            <i class="ti ti-user-heart" style="font-size:1.75rem;color:var(--primary);"></i>
+          </div>
+          <h3 style="font-size:1.05rem;font-weight:600;margin-bottom:0.4rem;color:var(--text-primary);">Patient</h3>
+          <p style="font-size:0.85rem;color:var(--text-muted);margin:0;">Search for medicines, consult doctors, and manage your health records.</p>
+        </div>
+      </div>
+    </a>
+
+    <!-- Doctor / Healthcare Worker -->
+    <a href="{{ url_for('auth.register_doctor') }}" class="reg-card" style="text-decoration:none;">
+      <div class="card" style="border:2px solid transparent;transition:border-color 0.2s,box-shadow 0.2s;cursor:pointer;height:100%;">
+        <div class="card-body" style="text-align:center;padding:2rem 1.5rem;">
+          <div style="width:56px;height:56px;border-radius:50%;background:#e8f5e9;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+            <i class="ti ti-stethoscope" style="font-size:1.75rem;color:#2e7d32;"></i>
+          </div>
+          <h3 style="font-size:1.05rem;font-weight:600;margin-bottom:0.4rem;color:var(--text-primary);">Doctor / Nurse / Pharmacist</h3>
+          <p style="font-size:0.85rem;color:var(--text-muted);margin:0;">Register as an individual healthcare professional. Credentials verified by admin.</p>
+        </div>
+      </div>
+    </a>
+
+    <!-- Hospital / Clinic / Pharmacy -->
+    <a href="{{ url_for('auth.register_facility') }}?type=clinic" class="reg-card" style="text-decoration:none;">
+      <div class="card" style="border:2px solid transparent;transition:border-color 0.2s,box-shadow 0.2s;cursor:pointer;height:100%;">
+        <div class="card-body" style="text-align:center;padding:2rem 1.5rem;">
+          <div style="width:56px;height:56px;border-radius:50%;background:#e3f2fd;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+            <i class="ti ti-building-hospital" style="font-size:1.75rem;color:#1565c0;"></i>
+          </div>
+          <h3 style="font-size:1.05rem;font-weight:600;margin-bottom:0.4rem;color:var(--text-primary);">Hospital / Clinic / Pharmacy</h3>
+          <p style="font-size:0.85rem;color:var(--text-muted);margin:0;">Register your facility. Your admin account lets you add staff and manage inventory.</p>
+        </div>
+      </div>
+    </a>
+
+    <!-- Distributor / Supplier -->
+    <a href="{{ url_for('auth.register_facility') }}?type=distributor" class="reg-card" style="text-decoration:none;">
+      <div class="card" style="border:2px solid transparent;transition:border-color 0.2s,box-shadow 0.2s;cursor:pointer;height:100%;">
+        <div class="card-body" style="text-align:center;padding:2rem 1.5rem;">
+          <div style="width:56px;height:56px;border-radius:50%;background:#fff3e0;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+            <i class="ti ti-truck-delivery" style="font-size:1.75rem;color:#e65100;"></i>
+          </div>
+          <h3 style="font-size:1.05rem;font-weight:600;margin-bottom:0.4rem;color:var(--text-primary);">Distributor / Supplier</h3>
+          <p style="font-size:0.85rem;color:var(--text-muted);margin:0;">List your medicine catalogue, receive orders from facilities, and manage dispatch.</p>
+        </div>
+      </div>
+    </a>
+
+    <!-- Delivery Company -->
+    <a href="{{ url_for('auth.register_delivery_company') }}" class="reg-card" style="text-decoration:none;">
+      <div class="card" style="border:2px solid transparent;transition:border-color 0.2s,box-shadow 0.2s;cursor:pointer;height:100%;">
+        <div class="card-body" style="text-align:center;padding:2rem 1.5rem;">
+          <div style="width:56px;height:56px;border-radius:50%;background:#f3e5f5;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+            <i class="ti ti-motorbike" style="font-size:1.75rem;color:#6a1b9a;"></i>
+          </div>
+          <h3 style="font-size:1.05rem;font-weight:600;margin-bottom:0.4rem;color:var(--text-primary);">Delivery Company</h3>
+          <p style="font-size:0.85rem;color:var(--text-muted);margin:0;">Register your transport company, add drivers, and receive medicine delivery jobs.</p>
+        </div>
+      </div>
+    </a>
+
+  </div>
+
+  <p style="text-align:center;margin-top:2rem;color:var(--text-muted);font-size:0.9rem;">
+    Already have an account? <a href="{{ url_for('auth.login') }}" style="color:var(--primary);font-weight:500;">Sign in</a>
+  </p>
+</div>
+
+<style>
+.reg-card .card:hover {
+  border-color: var(--primary) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;
+}
+</style>
+{% endblock %}

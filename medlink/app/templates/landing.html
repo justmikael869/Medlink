@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MedLink Uganda | Find medicine, verify it, see a doctor</title>
+<meta name="description" content="MedLink Uganda connects patients, pharmacies, doctors and district health officers. Find medicine in stock, verify it is genuine, book a doctor and get care on any phone.">
+<meta property="og:title" content="MedLink Uganda">
+<meta property="og:description" content="Find medicine in stock, verify it is genuine, book a doctor and get care on any phone.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0f4c81">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f4c81'/%3E%3Cpath d='M13 7h6v6h6v6h-6v6h-6v-6H7v-6h6z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+:root{
+  --navy:#08213b; --blue:#0f4c81; --blue-deep:#0b3a64; --blue-soft:#eaf2fb;
+  --green:#169b62; --green-deep:#0f7a4c; --green-soft:#e2f5ec;
+  --amber:#f2b705; --red:#c62828;
+  --ink:#0c2238; --muted:#566879; --line:#dbe4ec; --paper:#ffffff; --mist:#f5f8fb;
+  --display:'Plus Jakarta Sans','Inter',system-ui,sans-serif;
+  --body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{font-family:var(--body);color:var(--ink);background:var(--paper);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+img{max-width:100%;display:block}
+:focus-visible{outline:3px solid var(--amber);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1140px;margin:0 auto;padding:0 28px}
+h1,h2,h3{font-family:var(--display);line-height:1.12;letter-spacing:-.025em;color:var(--navy)}
+.sr{position:absolute;left:-9999px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:13px 24px;border-radius:10px;font-weight:600;font-size:15px;text-decoration:none;border:1.5px solid transparent;cursor:pointer;transition:background .15s,border-color .15s;font-family:var(--body)}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-deep)}
+.btn-ghost{border-color:#b9c9d8;color:var(--navy);background:#fff}
+.btn-ghost:hover{border-color:var(--blue);background:var(--blue-soft)}
+
+/* Top strip + nav */
+.strip{background:var(--navy);color:rgba(255,255,255,.85);font-size:13px}
+.strip .wrap{display:flex;justify-content:space-between;gap:16px;padding-top:8px;padding-bottom:8px;flex-wrap:wrap}
+.strip a{color:#fff;font-weight:600}
+.nav{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;justify-content:space-between;height:68px}
+.brand{font-family:var(--display);font-weight:800;font-size:20px;text-decoration:none;color:var(--navy);display:flex;align-items:center;gap:10px;letter-spacing:-.02em}
+.mark{width:34px;height:34px;border-radius:9px;background:var(--blue);display:grid;place-items:center;color:#fff;font-size:20px}
+.nav-links{display:flex;align-items:center;gap:30px;font-size:14.5px;font-weight:500}
+.nav-links a{text-decoration:none;color:var(--muted)}
+.nav-links a:hover{color:var(--navy)}
+.nav-links .btn{padding:9px 18px;font-size:14px;color:#fff}
+.nav-links .signin{color:var(--navy);font-weight:600}
+
+/* Hero */
+.hero{background:linear-gradient(180deg,var(--mist) 0%,#fff 100%);padding:84px 0 88px;border-bottom:1px solid var(--line)}
+.hero .wrap{display:grid;grid-template-columns:1.08fr .92fr;gap:64px;align-items:center}
+.hero h1{font-size:clamp(40px,5.4vw,64px);font-weight:800}
+.lead{font-size:19px;color:var(--muted);margin:24px 0 34px;max-width:31em}
+.actions{display:flex;gap:12px;flex-wrap:wrap}
+.assure{display:flex;gap:22px;flex-wrap:wrap;margin-top:30px;font-size:14px;color:var(--muted)}
+.assure span{display:flex;align-items:center;gap:7px}
+.assure i{color:var(--green);font-size:18px}
+
+.checker{background:#fff;border:1px solid var(--line);border-radius:18px;padding:30px;box-shadow:0 30px 60px -36px rgba(8,33,59,.45)}
+.checker-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.checker-head .ic{width:40px;height:40px;border-radius:10px;background:var(--green-soft);color:var(--green-deep);display:grid;place-items:center;font-size:22px}
+.checker h2{font-size:21px}
+.checker .sub{font-size:14px;color:var(--muted);margin:6px 0 18px}
+.checker form{display:flex;gap:8px}
+.checker input{flex:1;min-width:0;padding:13px 15px;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-size:15px;background:#fff}
+.checker input:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 3px var(--blue-soft)}
+.checker form button{padding:13px 20px;border:0;border-radius:10px;background:var(--green);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+.checker form button:hover{background:var(--green-deep)}
+.samples{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 18px;font-size:13px;color:var(--muted);align-items:center}
+.samples button{background:var(--mist);border:1px solid var(--line);color:var(--navy);padding:4px 11px;border-radius:999px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--body)}
+.samples button:hover{border-color:var(--blue)}
+.result{min-height:96px;border-radius:12px;padding:16px 18px;background:var(--mist);border:1.5px dashed var(--line);font-size:14px;color:var(--muted);display:flex;gap:14px;align-items:flex-start}
+.result>i{font-size:28px;flex-shrink:0}
+.result strong{display:block;font-family:var(--display);font-size:18px;color:var(--navy);margin-bottom:2px}
+.result.ok{background:var(--green-soft);border:1.5px solid var(--green);color:#14532d}
+.result.ok>i{color:var(--green)}
+.result.warn{background:#fff7da;border:1.5px solid var(--amber);color:#6b4e00}
+.result.warn>i{color:#b58900}
+.result.bad{background:#fdecec;border:1.5px solid var(--red);color:#7f1d1d}
+.result.bad>i{color:var(--red)}
+.checker .real{display:inline-block;margin-top:16px;font-size:13.5px;color:var(--blue);font-weight:600;text-decoration:none}
+.checker .real:hover{text-decoration:underline}
+
+/* Numbers band */
+.band{background:var(--navy);color:#fff;padding:68px 0}
+.band h2{color:#fff;font-size:clamp(26px,3.3vw,38px);max-width:19em;margin-bottom:42px}
+.facts{display:grid;grid-template-columns:repeat(4,1fr)}
+.fact{padding:0 26px;border-left:1px solid rgba(255,255,255,.2)}
+.fact:first-child{padding-left:0;border-left:0}
+.fact b{display:block;font-family:var(--display);font-size:46px;line-height:1;font-weight:800;color:var(--amber)}
+.fact span{display:block;margin-top:12px;font-size:14.5px;color:rgba(255,255,255,.82)}
+.band small{display:block;margin-top:34px;font-size:12.5px;color:rgba(255,255,255,.55)}
+
+/* Sections */
+.section{padding:96px 0}
+.section.alt{background:var(--mist);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.head{max-width:40em;margin-bottom:54px}
+.head h2{font-size:clamp(28px,3.5vw,42px)}
+.head p{color:var(--muted);margin-top:14px;font-size:18px}
+
+/* How it works */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;counter-reset:s}
+.step{position:relative;background:#fff;border:1px solid var(--line);border-radius:16px;padding:28px}
+.step::before{counter-increment:s;content:counter(s);width:34px;height:34px;border-radius:50%;background:var(--blue);color:#fff;font-family:var(--display);font-weight:800;display:grid;place-items:center;margin-bottom:18px}
+.step h3{font-size:20px;margin-bottom:8px}
+.step p{color:var(--muted);font-size:15px}
+
+/* Features */
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.feature{background:#fff;border:1px solid var(--line);border-radius:16px;padding:28px;display:flex;flex-direction:column}
+.feature .ic{width:46px;height:46px;border-radius:12px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center;font-size:24px;margin-bottom:18px}
+.feature.g .ic{background:var(--green-soft);color:var(--green-deep)}
+.feature h3{font-size:19px;margin-bottom:8px}
+.feature p{color:var(--muted);font-size:15px;flex:1}
+.feature a{margin-top:16px;font-weight:600;font-size:14.5px;color:var(--blue);text-decoration:none}
+.feature a:hover{text-decoration:underline}
+
+/* USSD */
+.ussd .wrap{display:grid;grid-template-columns:1fr 340px;gap:72px;align-items:center}
+.ussd h2{font-size:clamp(28px,3.5vw,42px)}
+.ussd p.t{margin-top:16px;color:var(--muted);font-size:18px;max-width:33em}
+.ticks{margin:26px 0 30px;list-style:none;display:grid;gap:12px;font-size:15.5px}
+.ticks li{display:flex;gap:10px}
+.ticks i{color:var(--green);margin-top:4px}
+.phone{background:#10161d;border-radius:36px;padding:20px 16px 26px;box-shadow:0 30px 50px -28px rgba(8,33,59,.6)}
+.phone .screen{background:#d9e6c8;color:#18260f;border-radius:10px;padding:16px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.6;white-space:pre-line;min-height:236px}
+.phone .dial{margin-top:16px;text-align:center;color:#8d9aa6;font-size:12px}
+.phone .dial b{color:var(--amber);font-size:17px;letter-spacing:.06em}
+
+/* Audiences */
+.audience{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid var(--line);border-radius:16px;background:#fff;overflow:hidden}
+.aud{padding:26px 22px;border-left:1px solid var(--line)}
+.aud:first-child{border-left:0}
+.aud i{font-size:26px;color:var(--blue)}
+.aud h3{font-size:17px;margin:12px 0 8px}
+.aud p{font-size:14px;color:var(--muted)}
+
+/* Payments */
+.pay{display:flex;align-items:center;gap:26px;flex-wrap:wrap;justify-content:center;padding:26px 0;color:var(--muted);font-size:14.5px}
+.pay img{height:44px;width:44px;border-radius:10px;object-fit:cover;border:1px solid var(--line)}
+.pay .logos{display:flex;gap:12px}
+
+/* FAQ */
+.faq{max-width:780px}
+.faq details{border-bottom:1px solid var(--line);padding:20px 0}
+.faq summary{cursor:pointer;font-family:var(--display);font-weight:700;font-size:18px;color:var(--navy);list-style:none;display:flex;justify-content:space-between;gap:18px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font-size:24px;line-height:1;color:var(--blue)}
+.faq details[open] summary::after{content:"\2212"}
+.faq p{margin-top:12px;color:var(--muted);font-size:15.5px;max-width:42em}
+
+/* CTA + footer */
+.cta{background:linear-gradient(135deg,var(--blue) 0%,var(--blue-deep) 100%);color:#fff;padding:84px 0;text-align:center}
+.cta h2{color:#fff;font-size:clamp(28px,3.6vw,44px);max-width:16em;margin:0 auto 16px}
+.cta p{color:rgba(255,255,255,.86);margin-bottom:32px;font-size:18px}
+.cta .btn-primary{background:#fff;color:var(--blue)}
+.cta .btn-primary:hover{background:var(--blue-soft)}
+.cta .btn-ghost{background:transparent;border-color:rgba(255,255,255,.55);color:#fff}
+.cta .btn-ghost:hover{background:rgba(255,255,255,.12)}
+.cta .actions{justify-content:center}
+footer{background:var(--navy);color:rgba(255,255,255,.72);padding:60px 0 28px;font-size:14.5px}
+.fgrid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:40px}
+footer h4{font-family:var(--display);color:#fff;font-size:15px;margin-bottom:14px}
+footer ul{list-style:none;display:grid;gap:9px}
+footer a{text-decoration:none}
+footer a:hover{color:#fff;text-decoration:underline}
+footer .about{max-width:26em}
+footer .brand{color:#fff;margin-bottom:14px}
+.crisis{margin-top:40px;padding:16px 20px;border:1px solid rgba(255,255,255,.18);border-radius:12px;display:flex;gap:12px;align-items:flex-start;color:#fff}
+.crisis i{color:var(--amber);font-size:22px}
+.crisis a{font-weight:700;text-decoration:underline}
+.legal{margin-top:28px;padding-top:22px;border-top:1px solid rgba(255,255,255,.14);font-size:13px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+@media(max-width:980px){
+  .hero .wrap,.ussd .wrap{grid-template-columns:1fr;gap:44px}
+  .facts{grid-template-columns:1fr 1fr;gap:34px 0}
+  .fact:nth-child(3){padding-left:0;border-left:0}
+  .features,.steps{grid-template-columns:1fr 1fr}
+  .audience{grid-template-columns:1fr 1fr}
+  .aud{border-left:0;border-top:1px solid var(--line)}
+  .aud:nth-child(-n+2){border-top:0}
+  .fgrid{grid-template-columns:1fr 1fr}
+  .phone{max-width:340px}
+}
+@media(max-width:620px){
+  .wrap{padding:0 20px}
+  .nav-links a:not(.btn):not(.signin){display:none}
+  .nav-links{gap:12px}
+  .nav .wrap{gap:10px}
+  .nav-links a,.brand{white-space:nowrap}
+  .brand{font-size:16px;gap:7px;letter-spacing:-.03em}
+  .mark{width:30px;height:30px;font-size:17px}
+  .nav-links .btn{padding:8px 11px;font-size:13px}
+  .nav-links .signin{font-size:13.5px}
+  .nav .wrap{padding:0 14px}
+  .fact b{font-size:34px;white-space:nowrap}
+  .fact{padding:0 16px}
+  .strip .wrap>span:last-child{display:none}
+  .hero{padding:48px 0 56px}
+  .features,.steps,.audience{grid-template-columns:1fr}
+  .aud{border-top:1px solid var(--line)!important}.aud:first-child{border-top:0!important}
+  .checker form{flex-direction:column}
+  .checker{padding:22px}
+  .section{padding:68px 0}
+  .fgrid{grid-template-columns:1fr}
+}
+@media(max-width:430px){.nav .uganda{display:none}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="strip">
+  <div class="wrap">
+    <span>Emergency? Call 999 or go to the nearest health facility.</span>
+    <span>Mental health crisis: <a href="tel:0800212121">Befrienders Uganda 0800 212 121</a></span>
+  </div>
+</div>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="{{ url_for('pages.landing') }}"><span class="mark"><i class="ti ti-heart-plus"></i></span>MedLink<span class="uganda">&nbsp;Uganda</span></a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="#how">How it works</a>
+      <a href="#features">Services</a>
+      <a href="#ussd">Any phone</a>
+      <a href="#faq">FAQ</a>
+      <a class="signin" href="{{ url_for('auth.login') }}">Sign in</a>
+      <a class="btn btn-primary" href="{{ url_for('auth.register_choose') }}">Create account</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <h1>Medicine, verified. Doctors, reachable.</h1>
+      <p class="lead">MedLink Uganda connects patients, pharmacies, doctors and district health officers, so getting the right care doesn't depend on where you live or what phone you own.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="{{ url_for('search.index') }}"><i class="ti ti-search"></i>Find a medicine</a>
+        <a class="btn btn-ghost" href="{{ url_for('telemedicine.triage') }}"><i class="ti ti-stethoscope"></i>Check my symptoms</a>
+      </div>
+      <div class="assure">
+        <span><i class="ti ti-circle-check"></i>Free to search and verify</span>
+        <span><i class="ti ti-circle-check"></i>No account needed</span>
+        <span><i class="ti ti-circle-check"></i>Works by USSD too</span>
+      </div>
+    </div>
+
+    <div class="checker">
+      <div class="checker-head"><span class="ic"><i class="ti ti-shield-check"></i></span><h2>Is your medicine genuine?</h2></div>
+      <p class="sub">Type the batch number printed on the pack and get an answer in seconds.</p>
+      <form id="verify-form" autocomplete="off">
+        <label for="batch" class="sr">Batch number</label>
+        <input id="batch" name="batch" placeholder="e.g. UG-2024-CIP-001" required>
+        <button type="submit">Check batch</button>
+      </form>
+      <div class="samples">Try a sample:
+        <button type="button" data-b="UG-2024-CIP-001">Genuine</button>
+        <button type="button" data-b="UG-2022-EXP-001">Expired</button>
+        <button type="button" data-b="UG-2023-RCL-001">Recalled</button>
+        <button type="button" data-b="FAKE-BATCH-999">Unknown</button>
+      </div>
+      <div class="result" id="result" aria-live="polite"><i class="ti ti-barcode"></i><div>Your result will appear here.</div></div>
+      <a class="real" href="{{ url_for('verify.index') }}">Open the full medicine checker <i class="ti ti-arrow-right"></i></a>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="why">
+  <div class="wrap">
+    <h2>Healthcare in Uganda is held back by gaps that better information can close.</h2>
+    <div class="facts">
+      <div class="fact"><b>1 in 10</b><span>medicines in sub-Saharan Africa is substandard or falsified</span></div>
+      <div class="fact"><b>4.7M</b><span>Ugandans live more than 5 km from a health facility</span></div>
+      <div class="fact"><b>336</b><span>maternal deaths per 100,000 live births, most of them preventable</span></div>
+      <div class="fact"><b>&lt;100</b><span>psychiatrists for about 48 million people</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="how">
+  <div class="wrap">
+    <div class="head">
+      <h2>From "where can I get it?" to "I'm looked after" in three steps</h2>
+      <p>Each step works on its own, and together they form one connected route to care.</p>
+    </div>
+    <div class="steps">
+      <div class="step"><h3>Find what you need</h3><p>Search by medicine or illness. See which pharmacies and clinics have it in stock, the distance, and who charges least.</p></div>
+      <div class="step"><h3>Know it's safe</h3><p>Check the batch number before you buy or take it. You'll see if it is genuine, expired or recalled.</p></div>
+      <div class="step"><h3>Get expert care</h3><p>Book a clinic visit or video consultation, then take your digital prescription to any pharmacy.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section alt" id="features">
+  <div class="wrap">
+    <div class="head">
+      <h2>Everything a patient, clinic or district office needs</h2>
+      <p>Clinical services for people, and supply and oversight tools for the facilities that serve them.</p>
+    </div>
+    <div class="features">
+      <article class="feature"><span class="ic"><i class="ti ti-map-search"></i></span><h3>Medicine search and prices</h3>
+        <p>Live stock across pharmacies, clinics and hospitals on a map, with the best price highlighted.</p>
+        <a href="{{ url_for('search.index') }}">Search medicine</a></article>
+      <article class="feature g"><span class="ic"><i class="ti ti-shield-check"></i></span><h3>Medicine verification</h3>
+        <p>Batch checks with approval number, manufacturer and expiry. Public, so anyone can use it without logging in.</p>
+        <a href="{{ url_for('verify.index') }}">Verify a batch</a></article>
+      <article class="feature"><span class="ic"><i class="ti ti-video"></i></span><h3>Telemedicine</h3>
+        <p>In-person or video consultations in the browser, with prescription and referral letters as PDFs.</p>
+        <a href="{{ url_for('telemedicine.doctor_list') }}">Find a doctor</a></article>
+      <article class="feature g"><span class="ic"><i class="ti ti-stethoscope"></i></span><h3>Symptom check</h3>
+        <p>AI triage tuned for conditions common in Uganda, such as malaria, typhoid, TB and sickle cell, with guidance on urgency.</p>
+        <a href="{{ url_for('telemedicine.triage') }}">Check symptoms</a></article>
+      <article class="feature"><span class="ic"><i class="ti ti-heart-handshake"></i></span><h3>Anonymous mental health</h3>
+        <p>PHQ-9 and GAD-7 screening and a support chat. No name, no login, and crisis contacts always on screen.</p>
+        <a href="{{ url_for('mentalhealth.index') }}">Start privately</a></article>
+      <article class="feature g"><span class="ic"><i class="ti ti-baby-carriage"></i></span><h3>Maternal, child and HIV care</h3>
+        <p>Antenatal schedules, vaccination and ART refill reminders by SMS in English, Luganda and Runyankole.</p>
+        <a href="{{ url_for('blood.index') }}">See blood availability</a></article>
+    </div>
+    <div class="pay">
+      <span>Pay for care with mobile money</span>
+      <span class="logos">
+        <img src="{{ url_for('static', filename='img/mtn_momo.png') }}" alt="MTN Mobile Money" width="44" height="44">
+        <img src="{{ url_for('static', filename='img/airtel_money.jpg') }}" alt="Airtel Money" width="44" height="44">
+      </span>
+    </div>
+  </div>
+</section>
+
+<section class="section ussd" id="ussd">
+  <div class="wrap">
+    <div>
+      <h2>No smartphone? No data? Dial *280#.</h2>
+      <p class="t">The core services also run over USSD, so they work on any basic phone and on MTN, Airtel and UTL, with no internet connection.</p>
+      <ul class="ticks">
+        <li><i class="ti ti-circle-check"></i>Find the nearest pharmacy with your medicine</li>
+        <li><i class="ti ti-circle-check"></i>Book a doctor and check your appointments</li>
+        <li><i class="ti ti-circle-check"></i>Report a medicine shortage to your district</li>
+      </ul>
+      <a class="btn btn-ghost" href="{{ url_for('ussd.ussd_simulator') }}">Try the USSD simulator</a>
+    </div>
+    <div class="phone" role="img" aria-label="USSD menu shown on a basic phone">
+      <div class="screen">Welcome to MedLink Uganda
+1. Find nearest medicine
+2. Book a doctor
+3. My appointments
+4. Check wallet balance
+5. Report medicine shortage
+6. Emergency contacts</div>
+      <div class="dial">Dial <b>*280#</b></div>
+    </div>
+  </div>
+</section>
+
+<section class="section alt" id="who">
+  <div class="wrap">
+    <div class="head">
+      <h2>One platform for the whole medicine chain</h2>
+      <p>The people who need care and the people who provide and oversee it work from the same information.</p>
+    </div>
+    <div class="audience">
+      <div class="aud"><i class="ti ti-user-heart"></i><h3>Patients</h3><p>Search, compare, verify, book doctors, track pregnancy and vaccinations.</p></div>
+      <div class="aud"><i class="ti ti-user-md"></i><h3>Doctors</h3><p>Manage appointments, run video consults, issue prescriptions and referrals.</p></div>
+      <div class="aud"><i class="ti ti-pill"></i><h3>Pharmacists</h3><p>Update stock, fill prescriptions, register batches and get expiry warnings.</p></div>
+      <div class="aud"><i class="ti ti-truck-delivery"></i><h3>Suppliers and drivers</h3><p>Receive facility orders and complete tracked deliveries with escrow payment.</p></div>
+      <div class="aud"><i class="ti ti-chart-dots"></i><h3>District officers</h3><p>See what people search for but can't find, and act on shortages early.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="faq">
+  <div class="wrap">
+    <div class="head"><h2>Common questions</h2></div>
+    <div class="faq">
+      <details><summary>Do I need an account to use MedLink?</summary>
+        <p>No. You can search for medicine, verify a batch, view doctors and take the anonymous mental health screening without signing in. An account is needed for bookings, your health wallet and records.</p></details>
+      <details><summary>How does medicine verification work?</summary>
+        <p>Enter the batch number on the pack. MedLink checks it against registered batches and tells you if it is verified, expired, recalled or not found, along with the manufacturer and expiry date where available.</p></details>
+      <details><summary>Does the symptom checker replace a doctor?</summary>
+        <p>No. It gives guidance on how urgently to seek care and suggests next steps. It does not diagnose. In an emergency, call 999 or go to the nearest facility.</p></details>
+      <details><summary>Is the mental health screening really anonymous?</summary>
+        <p>Yes. You can complete the PHQ-9 and GAD-7 and use the support chat without giving your name or logging in. If you choose to book a psychiatrist afterwards, you will need an account.</p></details>
+      <details><summary>Can I use MedLink without internet?</summary>
+        <p>Yes. Dial *280# on any phone to find medicine, book a doctor, check appointments and report shortages.</p></details>
+      <details><summary>I run a pharmacy, clinic or delivery company. How do I join?</summary>
+        <p>Choose your organisation type when you create an account. New facilities, doctors and delivery companies are reviewed before they go live.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="wrap">
+    <h2>Get the care you need, where you are.</h2>
+    <p>Free for patients. Facilities, doctors and delivery partners can register for review.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="{{ url_for('auth.register_choose') }}">Create an account</a>
+      <a class="btn btn-ghost" href="{{ url_for('auth.login') }}">Sign in</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="about">
+        <a class="brand" href="{{ url_for('pages.landing') }}"><span class="mark"><i class="ti ti-heart-plus"></i></span>MedLink Uganda</a>
+        <p>Connecting Ugandans to medicine, doctors and health, wherever they are.</p>
+      </div>
+      <div><h4>For patients</h4><ul>
+        <li><a href="{{ url_for('search.index') }}">Find medicine</a></li>
+        <li><a href="{{ url_for('verify.index') }}">Verify medicine</a></li>
+        <li><a href="{{ url_for('telemedicine.doctor_list') }}">Doctors</a></li>
+        <li><a href="{{ url_for('telemedicine.institution_list') }}">Hospitals</a></li></ul></div>
+      <div><h4>Health services</h4><ul>
+        <li><a href="{{ url_for('mentalhealth.index') }}">Mental health</a></li>
+        <li><a href="{{ url_for('blood.index') }}">Blood bank</a></li>
+        <li><a href="{{ url_for('ussd.ussd_simulator') }}">USSD simulator</a></li></ul></div>
+      <div><h4>Account</h4><ul>
+        <li><a href="{{ url_for('auth.login') }}">Sign in</a></li>
+        <li><a href="{{ url_for('auth.register_choose') }}">Create account</a></li>
+        <li><a href="{{ url_for('pages.privacy') }}">Privacy</a></li>
+        <li><a href="{{ url_for('pages.terms') }}">Terms</a></li></ul></div>
+    </div>
+    <div class="crisis"><i class="ti ti-phone-call"></i><div>In emotional crisis? Call <a href="tel:0800212121">Befrienders Uganda on 0800 212 121</a>. For a medical emergency, call 999.</div></div>
+    <div class="legal"><span>&copy; {{ now.year }} MedLink Uganda. All rights reserved.</span><span>MedLink provides information and connections, not medical diagnosis.</span></div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var DATA = {
+    'UG-2024-CIP-001': ['ok','ti-circle-check','Genuine','This batch is registered and within its expiry date.'],
+    'UG-2022-EXP-001': ['warn','ti-clock-exclamation','Expired','Do not use it. Return it to the pharmacy.'],
+    'UG-2023-RCL-001': ['bad','ti-alert-triangle','Recalled','Stop using this batch and tell a health worker.']
+  };
+  var form=document.getElementById('verify-form'), input=document.getElementById('batch'), out=document.getElementById('result');
+  function show(code){
+    var r=DATA[code.trim().toUpperCase()]||['bad','ti-help-circle','Not found','This batch is not registered. Ask the pharmacist before using it.'];
+    out.className='result '+r[0];
+    out.innerHTML='<i class="ti '+r[1]+'"></i><div><strong>'+r[2]+'</strong>'+r[3]+'</div>';
+  }
+  form.addEventListener('submit',function(e){e.preventDefault();show(input.value);});
+  document.querySelectorAll('.samples button').forEach(function(b){
+    b.addEventListener('click',function(){input.value=b.dataset.b;show(b.dataset.b);});
+  });
+})();
+</script>
+</body>
+</html>

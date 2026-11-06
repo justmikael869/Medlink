@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Browse Supplier Catalogues</h1>
+    <p class="page-subtitle">Find medicines from verified suppliers and place orders directly</p>
+  </div>
+</div>
+
+<form method="GET" style="display:flex;gap:10px;margin-bottom:20px;">
+  <input name="q" value="{{ search }}" placeholder="Search medicine name..." style="flex:1;">
+  <button type="submit" class="btn btn-primary"><i class="ti ti-search"></i>Search</button>
+</form>
+
+{% if items %}
+{% set current_supplier = namespace(id=None) %}
+{% for item in items %}
+  {% if item.supplier.id != current_supplier.id %}
+    {% if not loop.first %}</div></div>{% endif %}
+    {% set current_supplier.id = item.supplier.id %}
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-header">
+        <div>
+          <span class="card-title">{{ item.supplier.name }}</span>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">
+            {{ item.supplier.address or '' }}
+            {% if item.supplier.phone %} · {{ item.supplier.phone }}{% endif %}
+          </div>
+        </div>
+        <a href="{{ url_for('supplier.place_order', supplier_id=item.supplier.id) }}"
+           class="btn btn-primary btn-sm">Place Order</a>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Medicine</th><th>Form</th><th>Strength</th><th>Unit Price (UGX)</th><th>Min Qty</th><th>Lead Time</th></tr></thead>
+        <tbody>
+  {% endif %}
+          <tr>
+            <td style="font-weight:500;">{{ item.medicine.name }}</td>
+            <td style="font-size:12px;">{{ item.medicine.dosage_form or '—' }}</td>
+            <td style="font-size:12px;">{{ item.medicine.strength or '—' }}</td>
+            <td>{{ '{:,.0f}'.format(item.unit_price_ugx) }}</td>
+            <td>{{ item.min_order_qty }}</td>
+            <td>{{ item.lead_time_days }} days</td>
+          </tr>
+{% endfor %}
+        </tbody></table></div>
+    </div>
+{% else %}
+<div class="empty-state card"><i class="ti ti-building-warehouse"></i><p>No supplier catalogues found{% if search %} for "{{ search }}"{% endif %}.</p></div>
+{% endif %}
+{% endblock %}

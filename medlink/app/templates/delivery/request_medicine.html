@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Request Delivery — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:580px;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Medicine Delivery</h1>
+      <p class="page-subtitle">{{ prescription.medicine_name }}</p>
+    </div>
+    <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
+  </div>
+
+  {% if pharmacies %}
+  <div class="card" style="margin-bottom:16px;">
+    <form method="POST">
+      <div class="form-group">
+        <label>Select Pharmacy *</label>
+        {% for p in pharmacies %}
+        <label class="checkbox-label" style="display:flex;justify-content:space-between;padding:10px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:6px;cursor:pointer;">
+          <span style="display:flex;gap:8px;align-items:center;">
+            <input type="radio" name="pharmacy_id" value="{{ p.facility.id }}" required>
+            <span>
+              <strong style="font-size:13px;">{{ p.facility.name }}</strong><br>
+              <span style="font-size:12px;color:#6b7280;">{{ p.facility.address or p.facility.district.name if p.facility.district else '' }}</span>
+            </span>
+          </span>
+          <span style="font-size:13px;font-weight:600;color:var(--primary);">UGX {{ '{:,.0f}'.format(p.price or 0) }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      <div class="form-group">
+        <label>Delivery address *</label>
+        <input name="delivery_address" required placeholder="e.g. Plot 14, Kabalagala, Kampala">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Latitude (optional)</label>
+          <input name="delivery_lat" type="number" step="any" id="dlat" placeholder="Auto-detect">
+        </div>
+        <div class="form-group">
+          <label>Longitude (optional)</label>
+          <input name="delivery_lon" type="number" step="any" id="dlon" placeholder="Auto-detect">
+        </div>
+      </div>
+      {% if prescription.medicine and prescription.medicine.requires_cold_chain %}
+      <div class="alert alert-warning">This medicine requires cold-chain delivery. Only certified drivers with cold boxes will handle this order.</div>
+      {% endif %}
+      <div style="background:#f0fdf4;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;">
+         <strong>Delivery fee: UGX 5,000 (flat rate)</strong><br>
+        <span style="color:#6b7280;">Your wallet: UGX {{ '{:,.0f}'.format(current_user.wallet_balance_ugx or 0) }}</span>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-success">Place Delivery Order</button>
+      </div>
+    </form>
+  </div>
+  {% else %}
+  <div class="card" style="text-align:center;padding:30px;">
+    <div style="font-size:32px;margin-bottom:10px;color:#9ca3af;"><i class="ti ti-map-pin-off"></i></div>
+    <p style="color:#6b7280;">No pharmacies with <strong>{{ prescription.medicine_name }}</strong>in stock near you.</p>
+    <a href="{{ url_for('search.index') }}" class="btn btn-primary" style="margin-top:12px;">Search Manually</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(p =>{
+    document.getElementById('dlat').value = p.coords.latitude.toFixed(6);
+    document.getElementById('dlon').value = p.coords.longitude.toFixed(6);
+  });
+}
+</script>
+{% endblock %}

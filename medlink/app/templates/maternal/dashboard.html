@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Maternal Health — MedLink{% endblock %}
+{% block head %}
+<style>
+.preg-card{background:linear-gradient(135deg,#7c3aed 0%,#db2777 100%);border-radius:16px;padding:28px;color:#fff;margin-bottom:20px;}
+.preg-stat{text-align:center;padding:12px;}
+.preg-stat-num{font-size:28px;font-weight:700;line-height:1;}
+.preg-stat-lbl{font-size:11px;opacity:.8;margin-top:4px;}
+.visit-row{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:0.5px solid var(--border);}
+.visit-row:last-child{border-bottom:none;}
+.visit-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px;}
+.visit-dot.done{background:#dcfce7;color:#16a34a;}
+.visit-dot.next{background:#dbeafe;color:#1d4ed8;border:2px solid #3b82f6;}
+.visit-dot.overdue{background:#fee2e2;color:#dc2626;border:2px solid #ef4444;}
+.visit-dot.pending{background:var(--surface-2);color:var(--text-muted);}
+.timeline-line{position:absolute;left:15px;top:32px;bottom:0;width:2px;background:var(--border);}
+.week-ring{width:90px;height:90px;border-radius:50%;border:6px solid rgba(255,255,255,.25);display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 12px;}
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="preg-card">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+    <div>
+      <div style="font-size:12px;opacity:.7;text-transform:uppercase;letter-spacing:.06em;">
+        {{ ' Postnatal' if profile.status == 'postnatal' else ' Pregnancy Tracker' }}
+      </div>
+      <h1 style="font-size:20px;font-weight:700;margin:4px 0;">{{ current_user.name }}</h1>
+      <div style="font-size:13px;opacity:.8;">
+        EDD: <strong>{{ profile.edd.strftime('%d %B %Y') if profile.edd else '—' }}</strong>
+        {% if profile.edd %}· {{ (profile.edd - today).days }} days to go{% endif %}
+      </div>
+    </div>
+    <div style="display:flex;gap:0;background:rgba(255,255,255,.1);border-radius:12px;overflow:hidden;">
+      <div class="preg-stat">
+        <div class="preg-stat-num">{{ weeks_preg or '—' }}</div>
+        <div class="preg-stat-lbl">Weeks pregnant</div>
+      </div>
+      <div style="width:1px;background:rgba(255,255,255,.2);"></div>
+      <div class="preg-stat">
+        <div class="preg-stat-num">{{ completed|length }}</div>
+        <div class="preg-stat-lbl">ANC visits done</div>
+      </div>
+      <div style="width:1px;background:rgba(255,255,255,.2);"></div>
+      <div class="preg-stat">
+        <div class="preg-stat-num">{{ visits|length - completed|length }}</div>
+        <div class="preg-stat-lbl">Remaining</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  {% if weeks_preg %}
+  <div style="margin-top:8px;">
+    <div style="font-size:11px;opacity:.7;margin-bottom:6px;">Pregnancy progress — week {{ weeks_preg }} of 40</div>
+    <div style="background:rgba(255,255,255,.2);border-radius:999px;height:8px;overflow:hidden;">
+      <div style="width:{{ [((weeks_preg / 40) * 100)|round|int, 100]|min }}%;height:100%;background:#fff;border-radius:999px;transition:width .5s;"></div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
+    {% if profile.status == 'pregnant' %}
+    <a href="{{ url_for('maternal.record_delivery') }}" class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);">
+       Record delivery
+    </a>
+    {% endif %}
+    <a href="{{ url_for('telemedicine.book_institution', facility_id=profile.facility_id) if profile.facility_id else url_for('telemedicine.doctor_list', spec='Obstetrics & Gynaecology') }}" class="btn btn-sm" style="background:#fff;color:#7c3aed;border:none;">
+       Book ANC appointment
+    </a>
+  </div>
+</div>
+
+<!-- Overdue alert -->
+{% if overdue %}
+<div class="card" style="margin-bottom:16px;border-left:4px solid #dc2626;background:#fef2f2;">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+    <span style="font-size:18px;"></span>
+    <span style="font-weight:600;color:#dc2626;">{{ overdue|length }} overdue visit{{ 's' if overdue|length >1 }}</span>
+  </div>
+  {% for v in overdue %}
+  <div style="font-size:13px;margin-bottom:4px;">
+    <strong>{{ v.visit_label }}</strong>— was due {{ v.due_date.strftime('%d %b %Y') }}
+    ({{ (today - v.due_date).days }} days ago)
+  </div>
+  {% endfor %}
+  <a href="{{ url_for('telemedicine.doctor_list', spec='Obstetrics & Gynaecology') }}" class="btn btn-sm" style="background:#dc2626;color:#fff;border-color:#dc2626;margin-top:8px;">
+    Book now →
+  </a>
+</div>
+{% endif %}
+
+<!-- Next visit highlight -->
+{% if next_visit %}
+<div class="card" style="margin-bottom:16px;border-left:4px solid #3b82f6;background:#eff6ff;">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <div>
+      <div style="font-size:11px;color:#3b82f6;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Next visit</div>
+      <div style="font-size:15px;font-weight:600;">{{ next_visit.visit_label }}</div>
+      <div style="font-size:13px;color:#1d4ed8;margin-top:2px;">{{ next_visit.due_date.strftime('%A, %d %B %Y') }}</div>
+      {% set days_left = (next_visit.due_date - today).days %}
+      <div style="font-size:12px;color:#1e40af;margin-top:4px;">
+        {% if days_left == 0 %}Today!
+        {% elif days_left == 1 %}Tomorrow
+        {% else %}In {{ days_left }} days{% endif %}
+      </div>
+    </div>
+    <form method="POST" action="{{ url_for('maternal.complete_visit', vid=next_visit.id) }}">
+      <button type="submit" class="btn btn-primary btn-sm" onclick="return confirm('Mark this visit as completed?')">
+         Mark completed
+      </button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<!-- Full visit timeline -->
+<div class="card">
+  <div class="card-header"><span class="card-title">Full ANC / PNC Schedule</span></div>
+  <div style="position:relative;">
+    {% for v in visits %}
+    {% set state = 'done' if v.completed else ('overdue' if v.due_date < today else ('next' if loop.first or visits[loop.index0-1].completed else 'pending')) %}
+    <div class="visit-row">
+      <div class="visit-dot {{ state }}">
+        {% if state == 'done' %}
+        {% elif state == 'overdue' %}!
+        {% elif state == 'next' %}→
+        {% else %}{{ v.visit_number }}{% endif %}
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:{% if state in ('next','overdue') %}600{% else %}500{% endif %};color:{% if state=='overdue' %}#dc2626{% elif state=='done' %}var(--text-muted){% else %}var(--text-primary){% endif %};">
+          {{ v.visit_label }}
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">
+          {{ v.due_date.strftime('%d %B %Y') }}
+          {% if v.completed %} · Completed {{ v.completed_date.strftime('%d %b %Y') if v.completed_date else '' }}
+          {% elif v.due_date < today %} · <span style="color:#dc2626;font-weight:500;">OVERDUE</span>
+          {% endif %}
+        </div>
+        {% if v.notes %}<div style="font-size:12px;color:var(--text-muted);margin-top:2px;font-style:italic;">{{ v.notes }}</div>{% endif %}
+      </div>
+      {% if not v.completed and state != 'pending' %}
+      <form method="POST" action="{{ url_for('maternal.complete_visit', vid=v.id) }}" style="flex-shrink:0;">
+        <button type="submit" class="btn btn-sm" style="background:var(--surface-2);color:var(--text-secondary);font-size:11px;" onclick="return confirm('Mark as completed?')">Done</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Risk factors -->
+{% if profile.hiv_status == 'positive' or profile.diabetes or profile.hypertension or profile.sickle_cell %}
+<div class="card" style="margin-top:16px;border-left:4px solid #f97316;background:#fff7ed;">
+  <div style="font-weight:600;color:#c2410c;margin-bottom:10px;font-size:14px;">Risk factors on your profile</div>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:13px;">
+    {% if profile.hiv_status == 'positive' %}<span style="background:#fee2e2;color:#dc2626;padding:4px 10px;border-radius:999px;">HIV+ (PMTCT required)</span>{% endif %}
+    {% if profile.diabetes %}<span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:999px;">Diabetes</span>{% endif %}
+    {% if profile.hypertension %}<span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:999px;">Hypertension / Pre-eclampsia risk</span>{% endif %}
+    {% if profile.sickle_cell %}<span style="background:#fee2e2;color:#dc2626;padding:4px 10px;border-radius:999px;">Sickle Cell Disease</span>{% endif %}
+  </div>
+  <p style="font-size:12px;color:#9a3412;margin-top:10px;margin-bottom:0;">
+    These conditions require more frequent monitoring. Your doctor has been notified. Do not miss any ANC visits.
+  </p>
+</div>
+{% endif %}
+
+<!-- Danger signs info -->
+<div class="card" style="margin-top:16px;">
+  <div class="card-header"><span class="card-title">Danger signs — go to hospital immediately if you have:</span></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;font-size:13px;">
+    {% for sign in ['Severe headache or blurred vision','Heavy vaginal bleeding','Severe abdominal pain','Fever above 38°C','Fits or convulsions','Baby stopped moving','Swollen face, hands or feet','Difficulty breathing'] %}
+    <div style="background:#fef2f2;border-radius:8px;padding:8px 10px;color:#991b1b;">{{ sign }}</div>
+    {% endfor %}
+  </div>
+  <div style="margin-top:10px;font-size:12px;color:var(--text-muted);">
+    Emergency: <strong>999</strong>· Uganda Maternal Helpline: <strong>0800 220 003</strong>(toll-free)
+  </div>
+</div>
+
+{% endblock %}

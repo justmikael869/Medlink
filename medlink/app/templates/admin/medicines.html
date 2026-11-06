@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Medicine Catalogue — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Medicine Catalogue</h1>
+    <p class="page-subtitle">{{ medicines.total }} medicines in the system</p>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <a href="{{ url_for('admin.propose_medicine') }}" class="btn btn-primary">
+      <i class="ti ti-plus"></i>Propose Medicine
+    </a>
+  </div>
+</div>
+
+{% if proposals %}
+<div class="card" style="margin-bottom:16px;border-left:3px solid var(--warning);">
+  <div class="card-header">
+    <span class="card-title" style="color:var(--warning);">
+      Pending Proposals ({{ proposals|length }})
+    </span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Medicine</th><th>Category</th><th>Form</th><th>Proposed by</th><th>Date</th><th>Note</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for p in proposals %}
+        <tr>
+          <td>
+            <strong>{{ p.name }}</strong>
+            {% if p.generic_name %}<div style="font-size:11px;color:var(--text-muted);">{{ p.generic_name }}</div>{% endif %}
+          </td>
+          <td style="font-size:12px;">{{ p.category or '—' }}</td>
+          <td style="font-size:12px;">{{ p.dosage_form or '—' }} {{ p.strength or '' }}</td>
+          <td style="font-size:12px;">
+            {{ p.proposer.name }}<br>
+            <span style="color:var(--text-muted);">{{ p.proposer.role.replace('_',' ').title() }}</span>
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ p.created_at.strftime('%d %b %Y') }}</td>
+          <td style="font-size:12px;max-width:160px;">{{ p.proposer_note or '—' }}</td>
+          <td>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;">
+              <form method="POST"
+                    action="{{ url_for('admin.approve_medicine_proposal', proposal_id=p.id) }}">
+                <button type="submit" class="btn btn-success btn-sm">Approve</button>
+              </form>
+              <form method="POST"
+                    action="{{ url_for('admin.reject_medicine_proposal', proposal_id=p.id) }}">
+                <input name="review_note" placeholder="Reason..." style="font-size:11px;padding:3px 6px;width:110px;border:1px solid var(--border);border-radius:4px;">
+                <button type="submit" class="btn btn-danger btn-sm" style="margin-top:4px;width:100%;">Reject</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Search and filter -->
+<form method="GET" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+  <input name="q" value="{{ query }}" placeholder="Search by name, generic, disease..."
+         style="flex:1;min-width:200px;">
+  <select name="category" style="min-width:180px;">
+    <option value="">All categories</option>
+    {% for cat in categories %}
+    <option value="{{ cat }}" {% if cat == selected_cat %}selected{% endif %}>{{ cat }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn-primary">
+    <i class="ti ti-search"></i>Search
+  </button>
+  {% if query or selected_cat %}
+  <a href="{{ url_for('admin.medicines') }}" class="btn btn-secondary">Clear</a>
+  {% endif %}
+</form>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Generic</th>
+          <th>Category</th>
+          <th>Form / Strength</th>
+          <th>Flags</th>
+          <th>Diseases</th>
+          {% if current_user.role == 'system_admin' %}<th></th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in medicines.items %}
+        <tr>
+          <td style="font-weight:500;">{{ m.name }}</td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ m.generic_name or '—' }}</td>
+          <td><span class="badge badge-info" style="font-size:10px;">{{ m.category or '—' }}</span></td>
+          <td style="font-size:12px;">{{ m.dosage_form or '' }} {% if m.strength %}· {{ m.strength }}{% endif %}</td>
+          <td style="display:flex;gap:3px;flex-wrap:wrap;">
+            {% if m.critical %}<span class="badge badge-danger" style="font-size:10px;">Critical</span>{% endif %}
+            {% if m.requires_cold_chain %}<span class="badge badge-info" style="font-size:10px;">Cold Chain</span>{% endif %}
+            {% if m.prescription_required %}<span class="badge badge-warning" style="font-size:10px;">Rx Required</span>{% endif %}
+            {% if m.who_essential %}<span class="badge badge-success" style="font-size:10px;">WHO Essential</span>{% endif %}
+            {% if m.controlled_drug %}<span class="badge badge-danger" style="font-size:10px;">Controlled</span>{% endif %}
+          </td>
+          <td style="font-size:11px;color:var(--text-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            {{ m.diseases or '—' }}
+          </td>
+          {% if current_user.role == 'system_admin' %}
+          <td>
+            <a href="{{ url_for('admin.edit_medicine', med_id=m.id) }}"
+               class="btn btn-secondary btn-sm">Edit</a>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if medicines.pages >1 %}
+  <div style="display:flex;gap:6px;justify-content:center;padding:16px 0;border-top:1px solid var(--border);">
+    {% if medicines.has_prev %}
+    <a href="{{ url_for('admin.medicines', page=medicines.prev_num, q=query, category=selected_cat) }}"
+       class="btn btn-secondary btn-sm">Previous</a>
+    {% endif %}
+    <span style="padding:5px 12px;font-size:13px;color:var(--text-muted);">
+      Page {{ medicines.page }} of {{ medicines.pages }}
+    </span>
+    {% if medicines.has_next %}
+    <a href="{{ url_for('admin.medicines', page=medicines.next_num, q=query, category=selected_cat) }}"
+       class="btn btn-secondary btn-sm">Next</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

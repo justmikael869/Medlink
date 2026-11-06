@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Inbox — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Inbox</h1>
+    <p class="page-subtitle">{{ messages|length }} messages · {{ unread }} unread</p>
+  </div>
+  <a href="{{ url_for('messaging.compose') }}" class="btn btn-primary">
+    <i class="ti ti-pencil"></i>Compose
+  </a>
+</div>
+
+{% if messages %}
+<div class="card" style="padding:0;">
+  {% for m in messages %}
+  <a href="{{ url_for('messaging.view', msg_id=m.id) }}"
+     style="display:flex;align-items:center;gap:14px;padding:14px 18px;
+            border-bottom:1px solid #f3f4f6;text-decoration:none;
+            background:{{ '#fefce8' if not m.is_read else 'transparent' }};
+            transition:.1s;"
+     onmouseover="this.style.background='#f9fafb'"
+     onmouseout="this.style.background='{{ '#fefce8' if not m.is_read else 'transparent' }}'">
+    <div style="width:36px;height:36px;border-radius:50%;background:var(--primary-light);
+                display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <i class="ti ti-user" style="color:var(--primary);font-size:16px;"></i>
+    </div>
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:13px;font-weight:{{ '600' if not m.is_read else '500' }};color:var(--text);">
+          {{ m.sender.name }}
+        </span>
+        <span style="font-size:11px;color:var(--text-muted);">{{ m.created_at.strftime('%d %b %Y') }}</span>
+      </div>
+      <div style="font-size:13px;color:var(--text);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        {{ m.subject }}
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        {{ m.body[:80] }}
+      </div>
+    </div>
+    {% if not m.is_read %}
+    <div style="width:8px;height:8px;border-radius:50%;background:var(--primary);flex-shrink:0;"></div>
+    {% endif %}
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state card">
+  <i class="ti ti-inbox"></i>
+  <p>Your inbox is empty.</p>
+  <a href="{{ url_for('messaging.compose') }}" class="btn btn-primary">Send a message</a>
+</div>
+{% endif %}
+{% endblock %}

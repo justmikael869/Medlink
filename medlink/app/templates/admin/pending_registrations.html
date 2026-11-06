@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block title %}Pending Registrations — MedLink Admin{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Pending Registrations</h1>
+    <p class="page-subtitle">Review and approve or reject new facility, delivery company, and healthcare professional registrations.</p>
+  </div>
+  <div style="display:flex;gap:0.75rem;align-items:center;">
+    <span class="badge badge-warning" style="font-size:0.9rem;padding:0.4rem 0.75rem;">
+      {{ pending_facilities|length + pending_companies|length + pending_doctors|length }} pending
+    </span>
+  </div>
+</div>
+
+{% if not pending_facilities and not pending_companies and not pending_doctors %}
+<div class="card" style="text-align:center;padding:3rem;">
+  <i class="ti ti-checks" style="font-size:3rem;color:var(--success);display:block;margin-bottom:1rem;"></i>
+  <h3 style="color:var(--text-primary);">All Clear</h3>
+  <p style="color:var(--text-muted);">No pending registrations at this time.</p>
+</div>
+{% endif %}
+
+<!-- ─── FACILITIES ─────────────────────────────────────────────────────── -->
+{% if pending_facilities %}
+<div class="card" style="margin-bottom:2rem;">
+  <div class="card-header">
+    <h3 class="card-title"><i class="ti ti-building-hospital" style="color:var(--primary);"></i>Pending Facilities <span class="badge badge-warning">{{ pending_facilities|length }}</span></h3>
+  </div>
+  <div class="card-body" style="padding:0;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Facility</th>
+          <th>Type</th>
+          <th>District</th>
+          <th>Licence No.</th>
+          <th>Contact</th>
+          <th>Registered</th>
+          <th>Admin</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for fac in pending_facilities %}
+        <tr>
+          <td><strong>{{ fac.name }}</strong></td>
+          <td><span class="badge badge-info">{{ fac.facility_type.replace('_',' ').title() }}</span></td>
+          <td>{{ fac.district.name if fac.district else '—' }}</td>
+          <td>{{ fac.licence_no or '—' }}</td>
+          <td>
+            {% if fac.phone %}<div style="font-size:0.85rem;">{{ fac.phone }}</div>{% endif %}
+            {% if fac.email %}<div style="font-size:0.8rem;color:var(--text-muted);">{{ fac.email }}</div>{% endif %}
+          </td>
+          <td style="font-size:0.8rem;color:var(--text-muted);">{{ fac.created_at.strftime('%d %b %Y') }}</td>
+          <td>
+            {% set admin_u = fac.users|selectattr('role','eq','facility_admin')|first %}
+            {% if admin_u %}
+            <div style="font-size:0.85rem;">{{ admin_u.name }}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);">{{ admin_u.email }}</div>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            <div style="display:flex;flex-direction:column;gap:0.4rem;min-width:140px;">
+              <form method="POST" action="{{ url_for('admin.approve_facility', fid=fac.id) }}">
+                <button type="submit" class="btn btn-sm btn-success" style="width:100%;">
+                  <i class="ti ti-check"></i>Approve
+                </button>
+              </form>
+              <form method="POST" action="{{ url_for('admin.reject_facility', fid=fac.id) }}" onsubmit="return confirmReject(this)">
+                <input type="hidden" name="reason" class="reject-reason" value="">
+                <button type="submit" class="btn btn-sm btn-danger" style="width:100%;">
+                  <i class="ti ti-x"></i>Reject
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- ─── DELIVERY COMPANIES ─────────────────────────────────────────────── -->
+{% if pending_companies %}
+<div class="card" style="margin-bottom:2rem;">
+  <div class="card-header">
+    <h3 class="card-title"><i class="ti ti-motorbike" style="color:var(--primary);"></i>Pending Delivery Companies <span class="badge badge-warning">{{ pending_companies|length }}</span></h3>
+  </div>
+  <div class="card-body" style="padding:0;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Company</th>
+          <th>Contact</th>
+          <th>Coverage</th>
+          <th>Applied</th>
+          <th>Manager</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for co in pending_companies %}
+        <tr>
+          <td><strong>{{ co.name }}</strong></td>
+          <td>
+            <div style="font-size:0.85rem;">{{ co.contact_phone or '—' }}</div>
+            <div style="font-size:0.8rem;color:var(--text-muted);">{{ co.contact_email or '' }}</div>
+          </td>
+          <td style="font-size:0.8rem;color:var(--text-muted);">
+            {% if co.coverage_districts %}
+              {{ co.coverage_districts.split(',')[:3]|join(', ') }}{% if co.coverage_districts.split(',')|length >3 %} +{{ co.coverage_districts.split(',')|length - 3 }} more{% endif %}
+            {% else %}—{% endif %}
+          </td>
+          <td style="font-size:0.8rem;color:var(--text-muted);">{{ co.created_at.strftime('%d %b %Y') }}</td>
+          <td>
+            {% set mgr = co.drivers|first %}
+            {% if mgr %}
+            <div style="font-size:0.85rem;">{{ mgr.name }}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);">{{ mgr.email }}</div>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            <div style="display:flex;flex-direction:column;gap:0.4rem;min-width:140px;">
+              <form method="POST" action="{{ url_for('admin.approve_company', cid=co.id) }}">
+                <button type="submit" class="btn btn-sm btn-success" style="width:100%;">
+                  <i class="ti ti-check"></i>Approve
+                </button>
+              </form>
+              <form method="POST" action="{{ url_for('admin.reject_company', cid=co.id) }}" onsubmit="return confirmReject(this)">
+                <input type="hidden" name="reason" class="reject-reason" value="">
+                <button type="submit" class="btn btn-sm btn-danger" style="width:100%;">
+                  <i class="ti ti-x"></i>Reject
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- ─── HEALTHCARE PROFESSIONALS ──────────────────────────────────────── -->
+{% if pending_doctors %}
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="ti ti-stethoscope" style="color:var(--primary);"></i>Pending Healthcare Professionals <span class="badge badge-warning">{{ pending_doctors|length }}</span></h3>
+  </div>
+  <div class="card-body" style="padding:0;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Role</th>
+          <th>UMDPC No.</th>
+          <th>Specialisation</th>
+          <th>District</th>
+          <th>Facility</th>
+          <th>Registered</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for doc in pending_doctors %}
+        <tr>
+          <td>
+            <strong>{{ doc.name }}</strong>
+            <div style="font-size:0.75rem;color:var(--text-muted);">{{ doc.email }}</div>
+          </td>
+          <td><span class="badge badge-info">{{ doc.role.title() }}</span></td>
+          <td>{{ doc.umdpc_number or '—' }}</td>
+          <td>{{ doc.specialisation or '—' }}</td>
+          <td>{{ doc.district.name if doc.district else '—' }}</td>
+          <td>{{ doc.facility.name if doc.facility else 'Independent' }}</td>
+          <td style="font-size:0.8rem;color:var(--text-muted);">{{ doc.created_at.strftime('%d %b %Y') }}</td>
+          <td>
+            <div style="display:flex;flex-direction:column;gap:0.4rem;min-width:140px;">
+              <form method="POST" action="{{ url_for('admin.verify_doctor', user_id=doc.id) }}">
+                <button type="submit" class="btn btn-sm btn-success" style="width:100%;">
+                  <i class="ti ti-check"></i>Verify
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<script>
+function confirmReject(form) {
+  var reason = prompt('Reason for rejection (will be sent to applicant):');
+  if (reason === null) return false;
+  form.querySelector('.reject-reason').value = reason || 'Does not meet requirements.';
+  return true;
+}
+</script>
+{% endblock %}

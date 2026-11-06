@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Deliveries Admin — MedLink{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Deliveries Admin</h1>
+</div>
+
+{% if companies %}
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><span class="card-title">Delivery Companies</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Company</th><th>Phone</th><th>Drivers</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for co in companies %}
+        <tr>
+          <td><strong>{{ co.name }}</strong></td>
+          <td>{{ co.contact_phone or '—' }}</td>
+          <td>{{ co.drivers|length }}</td>
+          <td><span class="badge badge-{{ 'confirmed' if co.verified else 'pending' }}">{{ 'Verified' if co.verified else 'Pending' }}</span></td>
+          <td>
+            <form method="POST" action="{{ url_for('delivery.verify_company', company_id=co.id) }}">
+              <button type="submit" class="btn btn-{{ 'danger' if co.verified else 'success' }} btn-sm">
+                {{ 'Revoke' if co.verified else 'Verify' }}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header"><span class="card-title">All Delivery Orders</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Ref</th><th>Type</th><th>Patient</th><th>Company</th><th>Driver</th><th>Status</th><th>Cold</th><th>Fee</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td><strong>{{ o.reference }}</strong></td>
+          <td>{{ o.delivery_type.replace('_',' ').title() }}</td>
+          <td style="font-size:12px;">{{ o.patient.name if o.patient else '—' }}</td>
+          <td style="font-size:12px;">{{ o.company.name if o.company else '<span style="color:#ef4444;">None</span>'|safe }}</td>
+          <td style="font-size:12px;">{{ o.driver.name if o.driver else '<span style="color:#ef4444;">Unassigned</span>'|safe }}</td>
+          <td><span class="badge badge-{{ o.status }}">{{ o.status.replace('_',' ').title() }}</span></td>
+          <td>{{ '' if o.requires_cold_chain else '—' }}</td>
+          <td style="font-size:12px;">{{ '{:,.0f}'.format(o.fee_ugx) }}</td>
+          <td style="font-size:12px;color:#9ca3af;">{{ o.created_at.strftime('%d %b %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

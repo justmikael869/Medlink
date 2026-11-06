@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Order from {{ supplier.name }} — MedLink{% endblock %}
+{% block content %}
+<div style="max-width:720px;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Order from {{ supplier.name }}</h1>
+      <p class="page-subtitle">For {{ buyer.name if buyer else 'your facility' }}</p>
+    </div>
+    <a href="{{ url_for('supplier.browse') }}" class="btn btn-secondary">Back</a>
+  </div>
+
+  <div class="card">
+    <form method="POST" id="orderForm">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Medicine</th><th>Unit Price (UGX)</th><th>Min Qty</th><th>Lead</th><th>Order Qty</th><th>Subtotal</th></tr></thead>
+          <tbody>
+            {% for item in catalogue %}
+            <tr>
+              <td>
+                <div style="font-weight:500;">{{ item.medicine.name }}</div>
+                <div style="font-size:11px;color:var(--text-muted);">{{ item.medicine.dosage_form }}, {{ item.medicine.strength }}</div>
+              </td>
+              <td>{{ '{:,.0f}'.format(item.unit_price_ugx) }}</td>
+              <td>{{ item.min_order_qty }}</td>
+              <td>{{ item.lead_time_days }}d</td>
+              <td style="width:120px;">
+                <input type="number" name="qty_{{ item.id }}" min="0"
+                       value="0" class="qty-input"
+                       data-price="{{ item.unit_price_ugx }}"
+                       data-min="{{ item.min_order_qty }}"
+                       oninput="updateTotal()"
+                       style="width:90px;">
+              </td>
+              <td class="subtotal-{{ item.id }}" style="font-weight:500;color:var(--primary);">—</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="divider"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div style="font-size:18px;font-weight:700;">Total: <span id="grandTotal" style="color:var(--primary);">UGX 0</span></div>
+      </div>
+      <div class="form-group">
+        <label>Notes / Special Instructions</label>
+        <textarea name="notes" rows="2" placeholder="Delivery instructions, urgency, etc."></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary btn-lg">Submit Order</button>
+        <a href="{{ url_for('supplier.browse') }}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function updateTotal() {
+  let grand = 0;
+  document.querySelectorAll('.qty-input').forEach(inp =>{
+    const price = parseFloat(inp.dataset.price) || 0;
+    const qty = parseInt(inp.value) || 0;
+    const sub = price * qty;
+    grand += sub;
+    // find subtotal cell
+    const name = inp.getAttribute('name');
+    const itemId = name.replace('qty_','');
+    const cell = document.querySelector(`.subtotal-${itemId}`);
+    if (cell) cell.textContent = sub >0 ? 'UGX ' + sub.toLocaleString() : '—';
+  });
+  document.getElementById('grandTotal').textContent = 'UGX ' + grand.toLocaleString();
+}
+</script>
+{% endblock %}
